@@ -2183,8 +2183,9 @@ class FactTax(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
 
-    company_id = Column(BigInteger, nullable=False)
-    batch_id = Column(BigInteger, nullable=False)
+    company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"))
+
 
     year = Column(Integer, nullable=False)
     month = Column(Integer, nullable=False)
