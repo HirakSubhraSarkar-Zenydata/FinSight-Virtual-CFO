@@ -89,6 +89,7 @@ from processors.asset_value_yearly_depretiation_processor import process_asset_y
 from processors.asset_value_monthly_depretiation_processor import process_asset_monthly_depreciation # for monthly depreciation processing
 from processors.asset_journal_processor import process_asset_journal # for journal entry generation based on monthly depreciation
 from processors.fact_tax_processor import process_fact_tax # for tax calculation based on SL and depreciation data
+from processors.fact_general_ledger_processor import process_fact_general_ledger # for generating wide general ledger entries from SL and Asset Journal data, and also calculating tax amounts for each entry based on the tax processor output
 
 router = APIRouter()
 
@@ -148,6 +149,9 @@ def start_processing(
 
         # Added tax calculation step (depends on wide accounting and monthly depreciation)
         process_fact_tax(db, user.company_id, batch_id)
+
+        # Added general ledger generation step (depends on wide accounting, asset journal, and tax calculation)
+        process_fact_general_ledger(db, user.company_id, batch_id)  
 
 
 

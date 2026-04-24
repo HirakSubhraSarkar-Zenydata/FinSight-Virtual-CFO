@@ -1,223 +1,3 @@
-# from sqlalchemy import Column, Integer, String, DateTime
-# from datetime import datetime
-# from database import Base
-
-# class User(Base):
-#     __tablename__ = "users"
-
-#     id = Column(Integer, primary_key=True, index=True)
-#     company_name = Column(String, nullable=False)
-#     email = Column(String, unique=True, index=True, nullable=False)
-#     password_hash = Column(String, nullable=False)
-
-#     created_at = Column(DateTime, default=datetime.utcnow)
-
-# from sqlalchemy import (
-#     Column, BigInteger, String, DateTime, ForeignKey,
-#     Date, Integer, Numeric, UniqueConstraint, Index
-# )
-# from sqlalchemy.orm import relationship
-# from datetime import datetime
-# from database import Base
-
-
-# # =========================
-# # 🏢 COMPANY (TENANT ROOT)
-# # =========================
-# class Company(Base):
-#     __tablename__ = "companies"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-#     name = Column(String, nullable=False)
-#     industry = Column(String, nullable=False)  # 👈 ADD THIS
-
-#     created_at = Column(DateTime, default=datetime.utcnow)
-
-#     # Relationships
-#     users = relationship("User", back_populates="company")
-#     uploads = relationship("FileUpload", back_populates="company")
-
-
-# # =========================
-# # 👤 USERS
-# # =========================
-# class User(Base):
-#     __tablename__ = "users"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-#     company_id = Column(BigInteger, ForeignKey("companies.id"), nullable=False)
-
-#     first_name = Column(String, nullable=False)
-#     last_name = Column(String)
-
-#     email = Column(String, unique=True, index=True, nullable=False)
-#     password_hash = Column(String, nullable=False)
-
-#     role = Column(String, default="user")  # admin / analyst / viewer
-
-#     created_at = Column(DateTime, default=datetime.utcnow)
-
-#     # Relationships
-#     company = relationship("Company", back_populates="users")
-
-
-# # =========================
-# # 📂 FILE UPLOADS
-# # =========================
-# class FileUpload(Base):
-#     __tablename__ = "file_uploads"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-#     company_id = Column(BigInteger, ForeignKey("companies.id"), nullable=False)
-
-#     file_name = Column(String)
-#     file_path = Column(String)
-#     status = Column(String)  # processing / completed / failed
-
-#     uploaded_at = Column(DateTime, default=datetime.utcnow)
-
-#     # Relationships
-#     company = relationship("Company", back_populates="uploads")
-#     facts = relationship("FactSales", back_populates="file")
-
-
-# # =========================
-# # 📅 DIM DATE
-# # =========================
-# class DimDate(Base):
-#     __tablename__ = "dim_date"
-
-#     date_id = Column(Date, primary_key=True)
-#     year = Column(Integer, index=True)
-#     month = Column(Integer, index=True)
-#     day = Column(Integer)
-#     quarter = Column(Integer)
-#     month_name = Column(String)
-
-
-# # =========================
-# # 👤 DIM CUSTOMER
-# # =========================
-# class DimCustomer(Base):
-#     __tablename__ = "dim_customer"
-
-#     id = Column(BigInteger, primary_key=True)
-#     company_id = Column(BigInteger, ForeignKey("companies.id"), nullable=False)
-
-#     customer_name = Column(String, nullable=False)
-
-#     __table_args__ = (
-#         UniqueConstraint("customer_name", "company_id", name="uq_customer_company"),
-#     )
-
-#     # Relationships
-#     company = relationship("Company")
-#     facts = relationship("FactSales", back_populates="customer")
-
-
-# # =========================
-# # 🏷️ DIM PRODUCT (LOB)
-# # =========================
-# class DimProduct(Base):
-#     __tablename__ = "dim_product"
-
-#     id = Column(BigInteger, primary_key=True)
-#     company_id = Column(BigInteger, ForeignKey("companies.id"), nullable=False)
-
-#     product_name = Column("Product name", String, nullable=False)
-#     value = Column("Value", Integer)
-
-#     __table_args__ = (
-#         UniqueConstraint(
-#             "Product name",
-#             "company_id",
-#             name="uq_product_company"
-#         ),
-#     )
-
-#     company = relationship("Company")
-#     facts = relationship("FactSales", back_populates="product")
-
-
-# # =========================
-# # 🌍 DIM REGION
-# # =========================
-# class DimRegion(Base):
-#     __tablename__ = "dim_region"
-
-#     id = Column(BigInteger, primary_key=True)
-
-#     region = Column(String)
-#     geo = Column(String)
-#     country = Column(String)
-
-#     __table_args__ = (
-#         UniqueConstraint("region", "geo", "country", name="uq_region_geo_country"),
-#     )
-
-#     # Relationships
-#     facts = relationship("FactSales", back_populates="region")
-
-
-# # =========================
-# # 🔥 FACT TABLE
-# # =========================
-# class FactSales(Base):
-#     __tablename__ = "fact_sales"
-
-#     id = Column(BigInteger, primary_key=True)
-
-#     # Foreign Keys
-#     company_id = Column(BigInteger, ForeignKey("companies.id"), nullable=False)
-#     date_id = Column(Date, ForeignKey("dim_date.date_id"), nullable=False)
-#     customer_id = Column(BigInteger, ForeignKey("dim_customer.id"))
-#     product_id = Column(BigInteger, ForeignKey("dim_product.id"))
-#     region_id = Column(BigInteger, ForeignKey("dim_region.id"))
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id"))
-
-#     # Business Key
-#     order_id = Column(BigInteger, index=True)
-
-#     # Revenue Metrics
-#     revenue = Column(Numeric)
-#     cogs = Column(Numeric)
-#     gross_profit = Column(Numeric)
-
-#     # Cost Breakdown
-#     raw_material = Column(Numeric)
-#     direct_labor = Column(Numeric)
-#     freight = Column(Numeric)
-#     storage = Column(Numeric)
-#     packaging = Column(Numeric)
-#     indirect_labor = Column(Numeric)
-#     rent_utility = Column(Numeric)
-#     overhead = Column(Numeric)
-#     sga = Column(Numeric)
-
-#     # Derived Metrics
-#     ebit = Column(Numeric)
-#     ebit_percent = Column(Numeric)
-#     opex = Column(Numeric)
-
-#     created_at = Column(DateTime, default=datetime.utcnow)
-
-#     # Relationships
-#     company = relationship("Company")
-#     customer = relationship("DimCustomer", back_populates="facts")
-#     product = relationship("DimProduct", back_populates="facts")
-#     region = relationship("DimRegion", back_populates="facts")
-#     file = relationship("FileUpload", back_populates="facts")
-
-
-# # =========================
-# # ⚡ INDEXES (CRITICAL)
-# # =========================
-# Index("idx_fact_company_date", FactSales.company_id, FactSales.date_id)
-# Index("idx_fact_product", FactSales.product_id)
-# Index("idx_fact_customer", FactSales.customer_id)
-# Index("idx_fact_region", FactSales.region_id)
-# Index("idx_fact_order", FactSales.order_id)
-
 """
 models.py — Virtual CFO Platform
 SQLAlchemy ORM Models  |  Production Grade  |  Multi-Tenant  |  v3.0 Final
@@ -452,64 +232,198 @@ class User(Base):
 # ============================================================
 # INGESTION BATCH
 # ============================================================
+# class IngestionBatch(Base):
+#     __tablename__ = "ingestion_batches"
+
+#     id = Column(BigInteger, primary_key=True, index=True)
+#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+#     status = Column(BatchStatusEnum, nullable=False, default="pending")
+#     total_rows = Column(Integer, nullable=False, default=0)
+#     processed_rows = Column(Integer, nullable=False, default=0)
+#     failed_rows = Column(Integer, nullable=False, default=0)
+#     started_at = Column(DateTime)
+#     completed_at = Column(DateTime)
+#     error_summary = Column(Text)
+#     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+#     company = relationship("Company", back_populates="batches")
+#     files = relationship("FileUpload", back_populates="batch", cascade="all, delete")
+#     subledger_facts = relationship("FactSubLedger", back_populates="batch")
+#     sl_accounting = relationship("FactSLAccounting", back_populates="batch")
+
+#     __table_args__ = (
+#         Index("idx_batch_company", "company_id"),
+#         Index("idx_batch_status", "company_id", "status"),
+#         Index("idx_batch_created_at", "company_id", "created_at"),
+#     )
+
+
+# # ============================================================
+# # FILE UPLOAD
+# # ============================================================
+# class FileUpload(Base):
+#     __tablename__ = "file_uploads"
+
+#     id = Column(BigInteger, primary_key=True, index=True)
+#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"), nullable=True)
+#     file_name = Column(String(255))
+#     file_type = Column(FileTypeEnum, nullable=False)
+#     file_path = Column(String(500))
+#     status = Column(FileStatusEnum, nullable=False, default="pending")
+#     is_deleted = Column(Boolean, nullable=False, default=False)
+#     uploaded_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+#     processed_at = Column(DateTime)
+#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+#     company = relationship("Company", back_populates="uploads")
+#     batch = relationship("IngestionBatch", back_populates="files")
+#     raw_rows = relationship("RawData", back_populates="file", cascade="all, delete")
+#     validation_logs = relationship("ValidationLog", back_populates="file", cascade="all, delete")
+#     subledger_facts = relationship("FactSubLedger", back_populates="source_file")
+#     sl_accounting = relationship("FactSLAccounting", back_populates="source_file")
+
+#     # Added relationship to DimAssetValue for asset value processing
+#     asset_values = relationship("DimAssetValue", back_populates="source_file")
+
+#     __table_args__ = (
+#         Index("idx_file_upload_company", "company_id"),
+#         Index("idx_file_upload_batch", "batch_id"),
+#         Index("idx_file_upload_status", "company_id", "status"),
+#         Index("idx_file_upload_is_deleted", "company_id", "is_deleted"),
+#     )
+
 class IngestionBatch(Base):
     __tablename__ = "ingestion_batches"
 
     id = Column(BigInteger, primary_key=True, index=True)
-    company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+
+    company_id = Column(
+        BigInteger,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    # ✅ WHO CREATED THIS BATCH
+    created_by = Column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+
     status = Column(BatchStatusEnum, nullable=False, default="pending")
+
     total_rows = Column(Integer, nullable=False, default=0)
     processed_rows = Column(Integer, nullable=False, default=0)
     failed_rows = Column(Integer, nullable=False, default=0)
+
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
+
     error_summary = Column(Text)
+
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # =========================
+    # RELATIONSHIPS
+    # =========================
     company = relationship("Company", back_populates="batches")
-    files = relationship("FileUpload", back_populates="batch", cascade="all, delete")
+
+    created_user = relationship("User", foreign_keys=[created_by])
+
+    files = relationship(
+        "FileUpload",
+        back_populates="batch",
+        cascade="all, delete"
+    )
+
     subledger_facts = relationship("FactSubLedger", back_populates="batch")
     sl_accounting = relationship("FactSLAccounting", back_populates="batch")
 
+    # =========================
+    # INDEXES
+    # =========================
     __table_args__ = (
         Index("idx_batch_company", "company_id"),
+
+        # 🔥 IMPORTANT for dashboard filtering
+        Index("idx_batch_company_user", "company_id", "created_by"),
+
         Index("idx_batch_status", "company_id", "status"),
         Index("idx_batch_created_at", "company_id", "created_at"),
     )
+    
 
-
-# ============================================================
-# FILE UPLOAD
-# ============================================================
 class FileUpload(Base):
     __tablename__ = "file_uploads"
 
     id = Column(BigInteger, primary_key=True, index=True)
-    company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-    batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"), nullable=True)
+
+    company_id = Column(
+        BigInteger,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    batch_id = Column(
+        BigInteger,
+        ForeignKey("ingestion_batches.id", ondelete="SET NULL"),
+        nullable=True
+    )
+
+    # ✅ WHO UPLOADED THIS FILE
+    uploaded_by = Column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+
     file_name = Column(String(255))
     file_type = Column(FileTypeEnum, nullable=False)
+
     file_path = Column(String(500))
+
     status = Column(FileStatusEnum, nullable=False, default="pending")
+
     is_deleted = Column(Boolean, nullable=False, default=False)
+
     uploaded_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     processed_at = Column(DateTime)
+
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # =========================
+    # RELATIONSHIPS
+    # =========================
     company = relationship("Company", back_populates="uploads")
+
     batch = relationship("IngestionBatch", back_populates="files")
+
+    uploaded_user = relationship("User", foreign_keys=[uploaded_by])
+
     raw_rows = relationship("RawData", back_populates="file", cascade="all, delete")
+
     validation_logs = relationship("ValidationLog", back_populates="file", cascade="all, delete")
+
     subledger_facts = relationship("FactSubLedger", back_populates="source_file")
     sl_accounting = relationship("FactSLAccounting", back_populates="source_file")
 
-    # Added relationship to DimAssetValue for asset value processing
     asset_values = relationship("DimAssetValue", back_populates="source_file")
 
+    # =========================
+    # INDEXES
+    # =========================
     __table_args__ = (
         Index("idx_file_upload_company", "company_id"),
         Index("idx_file_upload_batch", "batch_id"),
+
+        # 🔥 IMPORTANT for user filtering
+        Index("idx_file_upload_company_user", "company_id", "uploaded_by"),
+
         Index("idx_file_upload_status", "company_id", "status"),
         Index("idx_file_upload_is_deleted", "company_id", "is_deleted"),
     )
@@ -1340,643 +1254,6 @@ class KPIValue(Base):
 
 
 
-# class DimAssetValue(Base):
-#     __tablename__ = "dim_asset_value"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id", ondelete="SET NULL"), nullable=True)  # ← ADD
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"), nullable=True)
-
-#     asset_name = Column(String(255), nullable=False)
-#     year = Column(Integer, nullable=False)
-#     asset_value = Column(MONEY, nullable=False)
-#     useful_life_years = Column(Integer)
-
-#     is_deleted = Column(Boolean, nullable=False, default=False)
-
-#     created_at = Column(DateTime, nullable=False, server_default=func.now())
-#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     company = relationship("Company", back_populates="asset_values")
-#     batch = relationship("IngestionBatch")
-#     source_file = relationship("FileUpload", back_populates="asset_values")
-
-#     __table_args__ = (
-#         Index("idx_asset_company", "company_id"),
-#         Index("idx_asset_year", "year"),
-#         Index("idx_asset_batch", "batch_id"),
-#         Index("idx_asset_file", "file_id"),   # Good to add
-#     )
-
-
-# # New added
-# class FactAssetYearlyDepreciation(Base):
-#     __tablename__ = "fact_asset_yearly_depreciation"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     # 🔗 CORE LINKS
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-#     asset_id = Column(BigInteger, ForeignKey("dim_asset_value.id", ondelete="CASCADE"), nullable=False)
-
-#     # ✅ DENORMALIZED FIELD (NEW)
-#     asset_name = Column(String(255), nullable=False)
-
-#     # 📅 TIME
-#     year = Column(Integer, nullable=False)
-
-#     # 💰 VALUE
-#     depreciation_amount = Column(MONEY, nullable=False)
-
-#     # 🔁 PIPELINE TRACEABILITY
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"), nullable=True)
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id"), nullable=True)
-
-#     # 🧹 FLAGS
-#     is_deleted = Column(Boolean, nullable=False, default=False)
-
-#     # ⏱ META
-#     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     # RELATIONSHIPS
-#     company = relationship("Company")
-#     asset = relationship("DimAssetValue")
-#     batch = relationship("IngestionBatch")
-#     source_file = relationship("FileUpload")
-
-#     __table_args__ = (
-#         UniqueConstraint("asset_id", "year", name="uq_asset_year_dep"),
-
-#         Index("idx_ydep_company", "company_id"),
-#         Index("idx_ydep_asset", "asset_id"),
-#         Index("idx_ydep_year", "year"),
-#         Index("idx_ydep_batch", "batch_id"),
-#         Index("idx_ydep_file", "file_id"),
-#     )
-
-# ------------------------------------------------------------------------------------------------#
-# New alter with coa id
-# class DimAssetValue(Base):
-#     __tablename__ = "dim_asset_value"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id", ondelete="SET NULL"), nullable=True)
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"), nullable=True)
-
-#     asset_name = Column(String(255), nullable=False)
-#     year = Column(Integer, nullable=False)
-#     asset_value = Column(MONEY, nullable=False)
-#     useful_life_years = Column(Integer)
-
-#     # ✅ COA mapping
-#     coa_id = Column(BigInteger, nullable=True)
-#     account_key = Column(BigInteger, nullable=True)
-
-#     is_deleted = Column(Boolean, nullable=False, default=False)
-
-#     created_at = Column(DateTime, nullable=False, server_default=func.now())
-#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     company = relationship("Company", back_populates="asset_values")
-#     batch = relationship("IngestionBatch")
-#     source_file = relationship("FileUpload", back_populates="asset_values")
-
-#     __table_args__ = (
-#         ForeignKeyConstraint(
-#             ["coa_id", "company_id"],
-#             ["dim_coa.id", "dim_coa.company_id"],
-#             name="fk_asset_coa_tenant"
-#         ),
-
-#         Index("idx_asset_company", "company_id"),
-#         Index("idx_asset_year", "year"),
-#         Index("idx_asset_batch", "batch_id"),
-#         Index("idx_asset_file", "file_id"),
-#         Index("idx_asset_coa", "coa_id"),
-#         Index("idx_asset_account_key", "account_key"),
-#     )
-
-# class FactAssetYearlyDepreciation(Base):
-#     __tablename__ = "fact_asset_yearly_depreciation"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-
-#     asset_id = Column(BigInteger, nullable=False)
-#     asset_name = Column(String(255), nullable=False)
-
-#     year = Column(Integer, nullable=False)
-#     depreciation_amount = Column(MONEY, nullable=False)
-
-#     # ✅ COA mapping
-#     coa_id = Column(BigInteger, nullable=True)
-#     account_key = Column(BigInteger, nullable=True)
-
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"))
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id"))
-
-#     is_deleted = Column(Boolean, nullable=False, default=False)
-
-#     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     company = relationship("Company")
-#     batch = relationship("IngestionBatch")
-#     source_file = relationship("FileUpload")
-
-#     __table_args__ = (
-#         UniqueConstraint("company_id", "asset_id", "year", name="uq_asset_yearly_dep"),
-
-#         ForeignKeyConstraint(
-#             ["coa_id", "company_id"],
-#             ["dim_coa.id", "dim_coa.company_id"],
-#             name="fk_asset_yearly_coa_tenant"
-#         ),
-
-#         Index("idx_asset_dep_company", "company_id"),
-#         Index("idx_asset_dep_year", "year"),
-#         Index("idx_asset_dep_batch", "batch_id"),
-#         Index("idx_asset_dep_coa", "coa_id"),
-#         Index("idx_asset_dep_account_key", "account_key"),
-#     )
-
-# class FactAssetMonthlyDepreciation(Base):
-#     __tablename__ = "fact_asset_monthly_depreciation"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-
-#     asset_id = Column(BigInteger, nullable=False)
-#     asset_name = Column(String(255), nullable=False)
-
-#     year = Column(Integer, nullable=False)
-#     month = Column(Integer, nullable=False)
-
-#     depreciation_amount = Column(MONEY, nullable=False)
-
-#     # ✅ COA mapping
-#     coa_id = Column(BigInteger, nullable=True)
-#     account_key = Column(BigInteger, nullable=True)
-
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"))
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id"))
-
-#     is_deleted = Column(Boolean, nullable=False, default=False)
-
-#     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     company = relationship("Company")
-#     batch = relationship("IngestionBatch")
-#     source_file = relationship("FileUpload")
-
-#     __table_args__ = (
-#         UniqueConstraint("company_id", "asset_id", "year", "month", name="uq_asset_monthly_dep"),
-
-#         ForeignKeyConstraint(
-#             ["coa_id", "company_id"],
-#             ["dim_coa.id", "dim_coa.company_id"],
-#             name="fk_asset_monthly_coa_tenant"
-#         ),
-
-#         Index("idx_asset_month_company", "company_id"),
-#         Index("idx_asset_month_year", "year"),
-#         Index("idx_asset_month_month", "month"),
-#         Index("idx_asset_month_batch", "batch_id"),
-#         Index("idx_asset_month_coa", "coa_id"),
-#         Index("idx_asset_month_account_key", "account_key"),
-#     )
-
-# class DimAssetValue(Base):
-#     __tablename__ = "dim_asset_value"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id", ondelete="SET NULL"), nullable=True)
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"), nullable=True)
-
-#     asset_name = Column(String(255), nullable=False)
-#     year = Column(Integer, nullable=False)
-#     asset_value = Column(MONEY, nullable=False)
-#     useful_life_years = Column(Integer)
-
-#     # ✅ COA Mapping (source of truth = coa_id)
-#     coa_id = Column(BigInteger, nullable=True)
-#     account_key = Column(BigInteger, nullable=True)  # denormalized copy
-
-#     is_deleted = Column(Boolean, nullable=False, default=False)
-
-#     created_at = Column(DateTime, nullable=False, server_default=func.now())
-#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     company = relationship("Company", back_populates="asset_values")
-#     batch = relationship("IngestionBatch")
-#     source_file = relationship("FileUpload", back_populates="asset_values")
-
-#     __table_args__ = (
-#         ForeignKeyConstraint(
-#             ["coa_id", "company_id"],
-#             ["dim_coa.id", "dim_coa.company_id"],
-#             name="fk_asset_coa_tenant"
-#         ),
-
-#         Index("idx_asset_company", "company_id"),
-#         Index("idx_asset_year", "year"),
-#         Index("idx_asset_batch", "batch_id"),
-#         Index("idx_asset_file", "file_id"),
-#         Index("idx_asset_coa", "coa_id"),
-#         Index("idx_asset_account_key", "account_key"),
-#     )
-
-
-# class FactAssetYearlyDepreciation(Base):
-#     __tablename__ = "fact_asset_yearly_depreciation"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-
-#     # ✅ FIXED FK
-#     asset_id = Column(
-#         BigInteger,
-#         ForeignKey("dim_asset_value.id", ondelete="CASCADE"),
-#         nullable=False
-#     )
-
-#     asset_name = Column(String(255), nullable=False)
-
-#     year = Column(Integer, nullable=False)
-#     depreciation_amount = Column(MONEY, nullable=False)
-
-#     # ✅ COA mapping
-#     coa_id = Column(BigInteger, nullable=True)
-#     account_key = Column(BigInteger, nullable=True)
-
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"))
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id"))
-
-#     is_deleted = Column(Boolean, nullable=False, default=False)
-
-#     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     company = relationship("Company")
-#     batch = relationship("IngestionBatch")
-#     source_file = relationship("FileUpload")
-
-#     __table_args__ = (
-#         UniqueConstraint("company_id", "asset_id", "year", name="uq_asset_yearly_dep"),
-
-#         ForeignKeyConstraint(
-#             ["coa_id", "company_id"],
-#             ["dim_coa.id", "dim_coa.company_id"],
-#             name="fk_asset_yearly_coa_tenant"
-#         ),
-
-#         Index("idx_asset_dep_company", "company_id"),
-#         Index("idx_asset_dep_year", "year"),
-#         Index("idx_asset_dep_batch", "batch_id"),
-#         Index("idx_asset_dep_coa", "coa_id"),
-#         Index("idx_asset_dep_account_key", "account_key"),
-#     )
-
-# class FactAssetMonthlyDepreciation(Base):
-#     __tablename__ = "fact_asset_monthly_depreciation"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-
-#     # ✅ FIXED FK
-#     asset_id = Column(
-#         BigInteger,
-#         ForeignKey("dim_asset_value.id", ondelete="CASCADE"),
-#         nullable=False
-#     )
-
-#     asset_name = Column(String(255), nullable=False)
-
-#     year = Column(Integer, nullable=False)
-#     month = Column(Integer, nullable=False)
-
-#     depreciation_amount = Column(MONEY, nullable=False)
-
-#     # ✅ COA mapping
-#     coa_id = Column(BigInteger, nullable=True)
-#     account_key = Column(BigInteger, nullable=True)
-
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"))
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id"))
-
-#     is_deleted = Column(Boolean, nullable=False, default=False)
-
-#     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     company = relationship("Company")
-#     batch = relationship("IngestionBatch")
-#     source_file = relationship("FileUpload")
-
-#     __table_args__ = (
-#         UniqueConstraint("company_id", "asset_id", "year", "month", name="uq_asset_monthly_dep"),
-
-#         ForeignKeyConstraint(
-#             ["coa_id", "company_id"],
-#             ["dim_coa.id", "dim_coa.company_id"],
-#             name="fk_asset_monthly_coa_tenant"
-#         ),
-
-#         Index("idx_asset_month_company", "company_id"),
-#         Index("idx_asset_month_year", "year"),
-#         Index("idx_asset_month_month", "month"),
-#         Index("idx_asset_month_batch", "batch_id"),
-#         Index("idx_asset_month_coa", "coa_id"),
-#         Index("idx_asset_month_account_key", "account_key"),
-#     )
-
-# class FactAssetJournal(Base):
-#     __tablename__ = "fact_asset_journal"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-
-#     asset_id = Column(
-#         BigInteger,
-#         ForeignKey("dim_asset_value.id", ondelete="CASCADE"),
-#         nullable=False
-#     )
-
-#     asset_name = Column(String(255), nullable=False)
-
-#     year = Column(Integer, nullable=False)
-#     month = Column(Integer, nullable=False)
-
-#     # ✅ ACCOUNT STRUCTURE
-#     natural_account = Column(BigInteger, nullable=False)   # 380, 81, etc
-#     account_code = Column(String(50), nullable=False)      # 2040-0000-380
-
-#     # ✅ FINANCIALS
-#     dr_amount = Column(MONEY, nullable=True)
-#     cr_amount = Column(MONEY, nullable=True)
-
-#     # ✅ COA mapping
-#     coa_id = Column(BigInteger, nullable=True)
-#     account_key = Column(BigInteger, nullable=True)
-
-#     # ✅ Extra context
-#     bsv_code = Column(String(50), nullable=True)  # 2040
-#     product_code = Column(String(50), nullable=True, default="0000")
-
-#     remarks = Column(String(255), nullable=True)
-
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"))
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id"))
-
-#     created_at = Column(DateTime, default=datetime.utcnow)
-
-#     __table_args__ = (
-#         Index("idx_journal_company", "company_id"),
-#         Index("idx_journal_asset", "asset_id"),
-#         Index("idx_journal_year_month", "year", "month"),
-#         Index("idx_journal_account", "natural_account"),
-#     )
-
-    
-
-# # ============================================================
-# # DIM: ASSET VALUE (BALANCE SHEET ONLY)
-# # ============================================================
-# class DimAssetValue(Base):
-#     __tablename__ = "dim_asset_value"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id", ondelete="SET NULL"))
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"))
-
-#     asset_name = Column(String(255), nullable=False)
-#     purchase_date = Column(Date, nullable=True)
-#     year = Column(Integer, nullable=False)
-#     asset_value = Column(BigInteger, nullable=False)
-#     useful_life_years = Column(Integer)
-#     depreciation_method = Column(String(50))  # Straight Line / WDV
-
-#     # =========================
-#     # ✅ BALANCE SHEET (ASSET)
-#     # =========================
-#     bs_asset_coa_id = Column(BigInteger, nullable=True)
-#     bs_asset_account_key = Column(BigInteger, nullable=True)  # 80, 90
-
-#     # =========================
-#     # ✅ BALANCE SHEET (ACC DEP)
-#     # =========================
-#     bs_accumulated_dep_coa_id = Column(BigInteger, nullable=True)
-#     bs_accumulated_dep_account_key = Column(BigInteger, nullable=True)  # 81, 82, 91
-
-#     is_deleted = Column(Boolean, nullable=False, default=False)
-
-#     created_at = Column(DateTime, nullable=False, server_default=func.now())
-#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     company = relationship("Company", back_populates="asset_values")
-#     batch = relationship("IngestionBatch")
-#     source_file = relationship("FileUpload", back_populates="asset_values")
-
-#     __table_args__ = (
-#         ForeignKeyConstraint(
-#             ["bs_asset_coa_id", "company_id"],
-#             ["dim_coa.id", "dim_coa.company_id"],
-#             name="fk_asset_bs_asset_coa"
-#         ),
-#         ForeignKeyConstraint(
-#             ["bs_accumulated_dep_coa_id", "company_id"],
-#             ["dim_coa.id", "dim_coa.company_id"],
-#             name="fk_asset_bs_acc_dep_coa"
-#         ),
-
-#         Index("idx_asset_company", "company_id"),
-#         Index("idx_asset_year", "year"),
-#         Index("idx_asset_batch", "batch_id"),
-#         Index("idx_asset_file", "file_id"),
-#     )
-
-
-# # ============================================================
-# # FACT: YEARLY DEPRECIATION (REPORTING)
-# # ============================================================
-# class FactAssetYearlyDepreciation(Base):
-#     __tablename__ = "fact_asset_yearly_depreciation"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-
-#     asset_id = Column(
-#         BigInteger,
-#         ForeignKey("dim_asset_value.id", ondelete="CASCADE"),
-#         nullable=False
-#     )
-
-#     year = Column(Integer, nullable=False)
-#     depreciation_amount = Column(BigInteger, nullable=False)
-
-#     # =========================
-#     # ✅ BALANCE SHEET VIEW
-#     # =========================
-#     bs_asset_account_key = Column(BigInteger, nullable=True)  # 80, 90
-
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"))
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id"))
-
-#     is_deleted = Column(Boolean, nullable=False, default=False)
-
-#     created_at = Column(DateTime, default=datetime.utcnow)
-#     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     company = relationship("Company")
-#     batch = relationship("IngestionBatch")
-#     source_file = relationship("FileUpload")
-
-#     __table_args__ = (
-#         UniqueConstraint("company_id", "asset_id", "year", name="uq_asset_yearly_dep"),
-
-#         Index("idx_asset_dep_company", "company_id"),
-#         Index("idx_asset_dep_year", "year"),
-#     )
-
-
-# # ============================================================
-# # FACT: MONTHLY DEPRECIATION (P&L + BS)
-# # ============================================================
-# class FactAssetMonthlyDepreciation(Base):
-#     __tablename__ = "fact_asset_monthly_depreciation"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-
-#     asset_id = Column(
-#         BigInteger,
-#         ForeignKey("dim_asset_value.id", ondelete="CASCADE"),
-#         nullable=False
-#     )
-
-#     year = Column(Integer, nullable=False)
-#     month = Column(Integer, nullable=False)
-
-#     depreciation_amount = Column(BigInteger, nullable=False)
-
-#     # =========================
-#     # ✅ PROFIT & LOSS
-#     # =========================
-#     pnl_depreciation_coa_id = Column(BigInteger, nullable=True)
-#     pnl_depreciation_account_key = Column(BigInteger, nullable=True)  # 370, 380, 390
-
-#     # =========================
-#     # ✅ BALANCE SHEET
-#     # =========================
-#     bs_accumulated_dep_coa_id = Column(BigInteger, nullable=True)
-#     bs_accumulated_dep_account_key = Column(BigInteger, nullable=True)  # 81, 82, 91
-
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"))
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id"))
-
-#     is_deleted = Column(Boolean, nullable=False, default=False)
-
-#     created_at = Column(DateTime, default=datetime.utcnow)
-#     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     company = relationship("Company")
-#     batch = relationship("IngestionBatch")
-#     source_file = relationship("FileUpload")
-
-#     __table_args__ = (
-#         UniqueConstraint("company_id", "asset_id", "year", "month", name="uq_asset_monthly_dep"),
-
-#         ForeignKeyConstraint(
-#             ["pnl_depreciation_coa_id", "company_id"],
-#             ["dim_coa.id", "dim_coa.company_id"],
-#             name="fk_monthly_pnl_coa"
-#         ),
-#         ForeignKeyConstraint(
-#             ["bs_accumulated_dep_coa_id", "company_id"],
-#             ["dim_coa.id", "dim_coa.company_id"],
-#             name="fk_monthly_bs_coa"
-#         ),
-
-#         Index("idx_asset_month_company", "company_id"),
-#         Index("idx_asset_month_year", "year"),
-#         Index("idx_asset_month_month", "month"),
-#     )
-
-
-# # ============================================================
-# # FACT: JOURNAL ENTRIES (FINAL ACCOUNTING LAYER)
-# # ============================================================
-# class FactAssetJournal(Base):
-#     __tablename__ = "fact_asset_journal"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-
-#     asset_id = Column(
-#         BigInteger,
-#         ForeignKey("dim_asset_value.id", ondelete="CASCADE"),
-#         nullable=False
-#     )
-
-#     year = Column(Integer, nullable=False)
-#     month = Column(Integer, nullable=False)
-
-#     # =========================
-#     # ✅ ACCOUNT
-#     # =========================
-#     natural_account = Column(BigInteger, nullable=False)   # 380, 81
-#     account_code = Column(String(50), nullable=False)
-
-#     # =========================
-#     # ✅ DR / CR
-#     # =========================
-#     dr_amount = Column(BigInteger, nullable=True)
-#     cr_amount = Column(BigInteger, nullable=True)
-
-#      # ✅ 🔥 ADD THIS (THIS FIXES YOUR ERROR)
-#     bsv_code = Column(String(50), nullable=True)
-
-#     # ✅ OPTIONAL BUT GOOD
-#     product_code = Column(String(50), default="0000")
-
-#     remarks = Column(String(255))
-
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"))
-#     file_id = Column(BigInteger, ForeignKey("file_uploads.id"))
-
-#     created_at = Column(DateTime, default=datetime.utcnow)
-
-#     __table_args__ = (
-#         CheckConstraint(
-#             "(dr_amount IS NOT NULL AND cr_amount IS NULL) OR (dr_amount IS NULL AND cr_amount IS NOT NULL)",
-#             name="check_dr_cr_only_one"
-#         ),
-
-#         Index("idx_journal_company", "company_id"),
-#         Index("idx_journal_asset", "asset_id"),
-#         Index("idx_journal_year_month", "year", "month"),
-#         Index("idx_journal_account", "natural_account"),
-#     )
-
-
 # ----------------------------------------------------------#
 
 # ============================================================
@@ -2242,5 +1519,244 @@ class FactTax(Base):
     )
 
 
+from sqlalchemy import (
+    Column, BigInteger, String, Date, Integer,
+    Boolean, ForeignKey, Index
+)
+# from sqlalchemy.dialects.postgresql import MONEY
+from sqlalchemy.orm import relationship
+from database import Base
 
+
+# class FactGeneralLedger(Base):
+#     __tablename__ = "fact_general_ledger"
+
+#     id = Column(BigInteger, primary_key=True, index=True)
+
+#     # ============================================
+#     # 🔥 SOURCE LINEAGE (ALL 3 SOURCES)
+#     # ============================================
+#     sl_accounting_id = Column(
+#         BigInteger,
+#         ForeignKey("fact_slaccounting_wide.id", ondelete="CASCADE"),
+#         nullable=True,
+#         index=True
+#     )
+
+#     asset_journal_id = Column(
+#         BigInteger,
+#         ForeignKey("fact_asset_journal.id", ondelete="CASCADE"),
+#         nullable=True,
+#         index=True
+#     )
+
+#     fact_tax_id = Column(   # ✅ NEW (TAX SOURCE)
+#         BigInteger,
+#         ForeignKey("fact_tax.id", ondelete="CASCADE"),
+#         nullable=True,
+#         index=True
+#     )
+
+#     # ============================================
+#     # 🔥 BUSINESS DATA
+#     # ============================================
+#     order_id = Column(String, nullable=True, index=True)
+#     order_date = Column(Date, nullable=True, index=True)
+#     month = Column(Integer, nullable=False, index=True)
+
+#     # ============================================
+#     # 🔥 ACCOUNT INFO
+#     # ============================================
+#     account = Column(String, nullable=False, index=True)
+#     natural_account = Column(String, index=True)
+#     account_subclass = Column(String, index=True)
+#     account_type = Column(String, index=True)
+#     sub_account = Column(String, index=True)
+
+#     # ============================================
+#     # 🔥 AMOUNTS (MONEY ✅)
+#     # ============================================
+#     dr_amount = Column(MONEY, nullable=False, default=0)
+#     cr_amount = Column(MONEY, nullable=False, default=0)
+
+#     # ============================================
+#     # 🔥 FLAGS
+#     # ============================================
+#     is_closing_entry = Column(Boolean, default=False, index=True)
+
+#     # ============================================
+#     # 🔥 DIMENSIONS
+#     # ============================================
+#     coa_id = Column(
+#         BigInteger,
+#         ForeignKey("dim_coa.id"),
+#         nullable=True,
+#         index=True
+#     )
+
+#     asset_id = Column(
+#         BigInteger,
+#         ForeignKey("dim_asset_value.id"),
+#         nullable=True,
+#         index=True
+#     )
+
+#     # ============================================
+#     # 🔥 RELATIONSHIPS
+#     # ============================================
+#     sl_accounting = relationship("FactSLAccountingWide")
+#     asset_journal = relationship("FactAssetJournal")
+#     fact_tax = relationship("FactTax")   # ✅ NEW
+#     coa = relationship("DimCOA")
+#     asset = relationship("DimAssetValue")
+
+#     # ============================================
+#     # 🔥 INDEXES (HIGH PERFORMANCE 🚀)
+#     # ============================================
+#     __table_args__ = (
+
+#         # 📊 Reporting (P&L / BS queries)
+#         Index("idx_gl_date_account", "order_date", "account"),
+#         Index("idx_gl_month_account", "month", "account"),
+
+#         # 📊 Filtering
+#         Index("idx_gl_type_date", "account_type", "order_date"),
+
+#         # 🔗 Lineage tracking (ALL SOURCES)
+#         Index("idx_gl_lineage_all", "sl_accounting_id", "asset_journal_id", "fact_tax_id"),
+
+#         # 🔗 COA lookup optimization
+#         Index("idx_gl_coa_lookup", "natural_account", "coa_id"),
+
+#         # 📦 Asset tracking
+#         Index("idx_gl_asset_date", "asset_id", "order_date"),
+
+#         # ⚡ Fast company/month queries (VERY IMPORTANT)
+#         Index("idx_gl_month_type", "month", "account_type"),
+#     )
+
+class FactGeneralLedger(Base):
+    __tablename__ = "fact_general_ledger"
+
+    # ============================================
+    # 🔥 PRIMARY KEY
+    # ============================================
+    id = Column(BigInteger, primary_key=True, index=True)
+
+    # ============================================
+    # 🔥 TENANT / BATCH (CRITICAL)
+    # ============================================
+    company_id = Column(BigInteger, nullable=False, index=True)
+    batch_id = Column(BigInteger, nullable=False, index=True)
+
+    # ============================================
+    # 🔥 SOURCE LINEAGE
+    # ============================================
+    sl_accounting_id = Column(
+        BigInteger,
+        ForeignKey("fact_slaccounting_wide.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True
+    )
+
+    asset_journal_id = Column(
+        BigInteger,
+        ForeignKey("fact_asset_journal.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True
+    )
+
+    fact_tax_id = Column(
+        BigInteger,
+        ForeignKey("fact_tax.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True
+    )
+
+    # ============================================
+    # 🔥 BUSINESS CONTEXT
+    # ============================================
+    order_id = Column(String, nullable=True, index=True)
+    order_date = Column(Date, nullable=True, index=True)
+    month = Column(Integer, nullable=False, index=True)
+
+    # ============================================
+    # 🔥 ACCOUNT DETAILS
+    # ============================================
+    account = Column(String, nullable=False, index=True)
+    natural_account = Column(String, nullable=True, index=True)
+    account_subclass = Column(String, nullable=True, index=True)
+    account_type = Column(String, nullable=True, index=True)
+    sub_account = Column(String, nullable=True, index=True)
+
+    # ============================================
+    # 🔥 AMOUNTS
+    # ============================================
+    dr_amount = Column(MONEY, nullable=False, default=0)
+    cr_amount = Column(MONEY, nullable=False, default=0)
+
+    # ============================================
+    # 🔥 FLAGS
+    # ============================================
+    is_closing_entry = Column(Boolean, default=False, index=True)
+
+    # ============================================
+    # 🔥 DIMENSIONS
+    # ============================================
+    coa_id = Column(
+        BigInteger,
+        ForeignKey("dim_coa.id"),
+        nullable=True,
+        index=True
+    )
+
+    asset_id = Column(
+        BigInteger,
+        ForeignKey("dim_asset_value.id"),
+        nullable=True,
+        index=True
+    )
+
+    # ============================================
+    # 🔥 RELATIONSHIPS
+    # ============================================
+    sl_accounting = relationship("FactSLAccountingWide")
+    asset_journal = relationship("FactAssetJournal")
+    fact_tax = relationship("FactTax")
+    coa = relationship("DimCOA")
+    asset = relationship("DimAssetValue")
+
+    # ============================================
+    # 🔥 INDEXES (PERFORMANCE OPTIMIZED 🚀)
+    # ============================================
+    __table_args__ = (
+
+        # 🔑 Core filtering (MOST IMPORTANT)
+        Index("idx_gl_company_batch", "company_id", "batch_id"),
+
+        # 📊 Reporting
+        Index("idx_gl_date_account", "order_date", "account"),
+        Index("idx_gl_month_account", "month", "account"),
+
+        # 📈 P&L / BS queries
+        Index("idx_gl_type_date", "account_type", "order_date"),
+        Index("idx_gl_month_type", "month", "account_type"),
+
+        # 🔁 Closing entries filtering
+        Index("idx_gl_closing", "company_id", "batch_id", "is_closing_entry"),
+
+        # 🔗 Source lineage tracking
+        Index(
+            "idx_gl_lineage_all",
+            "sl_accounting_id",
+            "asset_journal_id",
+            "fact_tax_id"
+        ),
+
+        # 🔍 COA lookup
+        Index("idx_gl_coa_lookup", "natural_account", "coa_id"),
+
+        # 📦 Asset reporting
+        Index("idx_gl_asset_date", "asset_id", "order_date"),
+    )
 
