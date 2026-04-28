@@ -229,70 +229,6 @@ class User(Base):
     )
 
 
-# ============================================================
-# INGESTION BATCH
-# ============================================================
-# class IngestionBatch(Base):
-#     __tablename__ = "ingestion_batches"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-#     status = Column(BatchStatusEnum, nullable=False, default="pending")
-#     total_rows = Column(Integer, nullable=False, default=0)
-#     processed_rows = Column(Integer, nullable=False, default=0)
-#     failed_rows = Column(Integer, nullable=False, default=0)
-#     started_at = Column(DateTime)
-#     completed_at = Column(DateTime)
-#     error_summary = Column(Text)
-#     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     company = relationship("Company", back_populates="batches")
-#     files = relationship("FileUpload", back_populates="batch", cascade="all, delete")
-#     subledger_facts = relationship("FactSubLedger", back_populates="batch")
-#     sl_accounting = relationship("FactSLAccounting", back_populates="batch")
-
-#     __table_args__ = (
-#         Index("idx_batch_company", "company_id"),
-#         Index("idx_batch_status", "company_id", "status"),
-#         Index("idx_batch_created_at", "company_id", "created_at"),
-#     )
-
-
-# # ============================================================
-# # FILE UPLOAD
-# # ============================================================
-# class FileUpload(Base):
-#     __tablename__ = "file_uploads"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"), nullable=True)
-#     file_name = Column(String(255))
-#     file_type = Column(FileTypeEnum, nullable=False)
-#     file_path = Column(String(500))
-#     status = Column(FileStatusEnum, nullable=False, default="pending")
-#     is_deleted = Column(Boolean, nullable=False, default=False)
-#     uploaded_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-#     processed_at = Column(DateTime)
-#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     company = relationship("Company", back_populates="uploads")
-#     batch = relationship("IngestionBatch", back_populates="files")
-#     raw_rows = relationship("RawData", back_populates="file", cascade="all, delete")
-#     validation_logs = relationship("ValidationLog", back_populates="file", cascade="all, delete")
-#     subledger_facts = relationship("FactSubLedger", back_populates="source_file")
-#     sl_accounting = relationship("FactSLAccounting", back_populates="source_file")
-
-#     # Added relationship to DimAssetValue for asset value processing
-#     asset_values = relationship("DimAssetValue", back_populates="source_file")
-
-#     __table_args__ = (
-#         Index("idx_file_upload_company", "company_id"),
-#         Index("idx_file_upload_batch", "batch_id"),
-#         Index("idx_file_upload_status", "company_id", "status"),
-#         Index("idx_file_upload_is_deleted", "company_id", "is_deleted"),
-#     )
 
 class IngestionBatch(Base):
     __tablename__ = "ingestion_batches"
@@ -1528,113 +1464,6 @@ from sqlalchemy.orm import relationship
 from database import Base
 
 
-# class FactGeneralLedger(Base):
-#     __tablename__ = "fact_general_ledger"
-
-#     id = Column(BigInteger, primary_key=True, index=True)
-
-#     # ============================================
-#     # 🔥 SOURCE LINEAGE (ALL 3 SOURCES)
-#     # ============================================
-#     sl_accounting_id = Column(
-#         BigInteger,
-#         ForeignKey("fact_slaccounting_wide.id", ondelete="CASCADE"),
-#         nullable=True,
-#         index=True
-#     )
-
-#     asset_journal_id = Column(
-#         BigInteger,
-#         ForeignKey("fact_asset_journal.id", ondelete="CASCADE"),
-#         nullable=True,
-#         index=True
-#     )
-
-#     fact_tax_id = Column(   # ✅ NEW (TAX SOURCE)
-#         BigInteger,
-#         ForeignKey("fact_tax.id", ondelete="CASCADE"),
-#         nullable=True,
-#         index=True
-#     )
-
-#     # ============================================
-#     # 🔥 BUSINESS DATA
-#     # ============================================
-#     order_id = Column(String, nullable=True, index=True)
-#     order_date = Column(Date, nullable=True, index=True)
-#     month = Column(Integer, nullable=False, index=True)
-
-#     # ============================================
-#     # 🔥 ACCOUNT INFO
-#     # ============================================
-#     account = Column(String, nullable=False, index=True)
-#     natural_account = Column(String, index=True)
-#     account_subclass = Column(String, index=True)
-#     account_type = Column(String, index=True)
-#     sub_account = Column(String, index=True)
-
-#     # ============================================
-#     # 🔥 AMOUNTS (MONEY ✅)
-#     # ============================================
-#     dr_amount = Column(MONEY, nullable=False, default=0)
-#     cr_amount = Column(MONEY, nullable=False, default=0)
-
-#     # ============================================
-#     # 🔥 FLAGS
-#     # ============================================
-#     is_closing_entry = Column(Boolean, default=False, index=True)
-
-#     # ============================================
-#     # 🔥 DIMENSIONS
-#     # ============================================
-#     coa_id = Column(
-#         BigInteger,
-#         ForeignKey("dim_coa.id"),
-#         nullable=True,
-#         index=True
-#     )
-
-#     asset_id = Column(
-#         BigInteger,
-#         ForeignKey("dim_asset_value.id"),
-#         nullable=True,
-#         index=True
-#     )
-
-#     # ============================================
-#     # 🔥 RELATIONSHIPS
-#     # ============================================
-#     sl_accounting = relationship("FactSLAccountingWide")
-#     asset_journal = relationship("FactAssetJournal")
-#     fact_tax = relationship("FactTax")   # ✅ NEW
-#     coa = relationship("DimCOA")
-#     asset = relationship("DimAssetValue")
-
-#     # ============================================
-#     # 🔥 INDEXES (HIGH PERFORMANCE 🚀)
-#     # ============================================
-#     __table_args__ = (
-
-#         # 📊 Reporting (P&L / BS queries)
-#         Index("idx_gl_date_account", "order_date", "account"),
-#         Index("idx_gl_month_account", "month", "account"),
-
-#         # 📊 Filtering
-#         Index("idx_gl_type_date", "account_type", "order_date"),
-
-#         # 🔗 Lineage tracking (ALL SOURCES)
-#         Index("idx_gl_lineage_all", "sl_accounting_id", "asset_journal_id", "fact_tax_id"),
-
-#         # 🔗 COA lookup optimization
-#         Index("idx_gl_coa_lookup", "natural_account", "coa_id"),
-
-#         # 📦 Asset tracking
-#         Index("idx_gl_asset_date", "asset_id", "order_date"),
-
-#         # ⚡ Fast company/month queries (VERY IMPORTANT)
-#         Index("idx_gl_month_type", "month", "account_type"),
-#     )
-
 class FactGeneralLedger(Base):
     __tablename__ = "fact_general_ledger"
 
@@ -1644,10 +1473,21 @@ class FactGeneralLedger(Base):
     id = Column(BigInteger, primary_key=True, index=True)
 
     # ============================================
-    # 🔥 TENANT / BATCH (CRITICAL)
+    # 🔥 TENANT / BATCH (UPDATED ✅ FK ADDED)
     # ============================================
-    company_id = Column(BigInteger, nullable=False, index=True)
-    batch_id = Column(BigInteger, nullable=False, index=True)
+    company_id = Column(
+        BigInteger,
+        ForeignKey("companies.id", ondelete="CASCADE"),  # ✅ ADDED FK
+        nullable=False,
+        index=True
+    )
+
+    batch_id = Column(
+        BigInteger,
+        ForeignKey("ingestion_batches.id", ondelete="CASCADE"),  # ✅ ADDED FK
+        nullable=False,
+        index=True
+    )
 
     # ============================================
     # 🔥 SOURCE LINEAGE
@@ -1720,6 +1560,12 @@ class FactGeneralLedger(Base):
     # ============================================
     # 🔥 RELATIONSHIPS
     # ============================================
+    # ============================================
+    # 🔥 RELATIONSHIPS (OPTIONAL BUT GOOD)
+    # ============================================
+    company = relationship("Company")        # ✅ ADDED
+    batch = relationship("IngestionBatch")   # ✅ ADDED
+
     sl_accounting = relationship("FactSLAccountingWide")
     asset_journal = relationship("FactAssetJournal")
     fact_tax = relationship("FactTax")
@@ -1758,5 +1604,294 @@ class FactGeneralLedger(Base):
 
         # 📦 Asset reporting
         Index("idx_gl_asset_date", "asset_id", "order_date"),
+    )
+
+
+# class FactGeneralLedger(Base):
+#     __tablename__ = "fact_general_ledger"
+
+#     # ============================================
+#     # 🔥 PRIMARY KEY
+#     # ============================================
+#     id = Column(BigInteger, primary_key=True)
+
+#     # ============================================
+#     # 🔥 TENANT / BATCH
+#     # ============================================
+#     company_id = Column(
+#         BigInteger,
+#         ForeignKey("companies.id", ondelete="CASCADE"),
+#         nullable=False
+#     )
+
+#     batch_id = Column(
+#         BigInteger,
+#         ForeignKey("ingestion_batches.id", ondelete="CASCADE"),
+#         nullable=False
+#     )
+
+#     # ============================================
+#     # 🔥 SOURCE LINEAGE
+#     # ============================================
+#     sl_accounting_id = Column(
+#         BigInteger,
+#         ForeignKey("fact_slaccounting_wide.id", ondelete="CASCADE"),
+#         nullable=True
+#     )
+
+#     asset_journal_id = Column(
+#         BigInteger,
+#         ForeignKey("fact_asset_journal.id", ondelete="CASCADE"),
+#         nullable=True
+#     )
+
+#     fact_tax_id = Column(
+#         BigInteger,
+#         ForeignKey("fact_tax.id", ondelete="CASCADE"),
+#         nullable=True
+#     )
+
+#     # ============================================
+#     # 🔥 BUSINESS CONTEXT
+#     # ============================================
+#     order_id = Column(String, nullable=True)
+#     order_date = Column(Date, nullable=True)
+
+#     # 🔥 PERFORMANCE COLUMNS (IMPORTANT)
+#     year = Column(Integer, nullable=False, index=True)
+#     month = Column(Integer, nullable=False, index=True)
+
+#     # ============================================
+#     # 🔥 ACCOUNT DETAILS
+#     # ============================================
+#     account = Column(String, nullable=False)
+#     natural_account = Column(String, nullable=True)
+#     account_subclass = Column(String, nullable=True)
+#     account_type = Column(String, nullable=True)
+#     sub_account = Column(String, nullable=True)
+
+#     # ============================================
+#     # 🔥 AMOUNTS
+#     # ============================================
+#     dr_amount = Column(MONEY, nullable=False, default=0)
+#     cr_amount = Column(MONEY, nullable=False, default=0)
+
+#     # ============================================
+#     # 🔥 FLAGS
+#     # ============================================
+#     is_closing_entry = Column(Boolean, default=False)
+
+#     # ============================================
+#     # 🔥 DIMENSIONS
+#     # ============================================
+#     coa_id = Column(
+#         BigInteger,
+#         ForeignKey("dim_coa.id"),
+#         nullable=True
+#     )
+
+#     asset_id = Column(
+#         BigInteger,
+#         ForeignKey("dim_asset_value.id"),
+#         nullable=True
+#     )
+
+#     # ============================================
+#     # 🔥 RELATIONSHIPS
+#     # ============================================
+#     company = relationship("Company")
+#     batch = relationship("IngestionBatch")
+
+#     sl_accounting = relationship("FactSLAccountingWide")
+#     asset_journal = relationship("FactAssetJournal")
+#     fact_tax = relationship("FactTax")
+#     coa = relationship("DimCOA")
+#     asset = relationship("DimAssetValue")
+
+#     # ============================================
+#     # 🔥 INDEXES (LEAN + HIGH IMPACT)
+#     # ============================================
+#     __table_args__ = (
+
+#         # 🔑 Core filter
+#         Index("idx_gl_company_batch", "company_id", "batch_id"),
+
+#         # 🔥 MAIN AGGREGATION INDEX (CRITICAL)
+#         Index(
+#             "idx_gl_year_agg",
+#             "company_id",
+#             "batch_id",
+#             "is_closing_entry",
+#             "account_type",
+#             "year"
+#         ),
+
+#         # 🔥 COVERING INDEX (SUPER FAST SUM)
+#         Index(
+#             "idx_gl_covering",
+#             "company_id",
+#             "batch_id",
+#             "is_closing_entry",
+#             "account_type",
+#             "year",
+#             postgresql_include=["dr_amount", "cr_amount"]
+#         ),
+
+#         # 🔁 Closing filter
+#         Index("idx_gl_closing", "company_id", "batch_id", "is_closing_entry"),
+
+#         # 📊 Optional reporting
+#         Index("idx_gl_month_type", "month", "account_type"),
+#     )
+
+
+class FactGLRecon(Base):
+    __tablename__ = "fact_gl_recon"
+
+    # ============================================
+    # 🔥 PRIMARY KEY
+    # ============================================
+    id = Column(BigInteger, primary_key=True, index=True)
+
+    # ============================================
+    # 🔥 TENANT / BATCH (FK ✅)
+    # ============================================
+    company_id = Column(
+        BigInteger,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    batch_id = Column(
+        BigInteger,
+        ForeignKey("ingestion_batches.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    # ============================================
+    # 🔥 GROUPING KEYS
+    # ============================================
+    year = Column(Integer, nullable=False, index=True)
+    account = Column(String, nullable=False, index=True)
+
+    # ============================================
+    # 🔥 DERIVED ACCOUNT INFO
+    # ============================================
+    natural_account = Column(String, nullable=True, index=True)
+    account_subclass = Column(String, nullable=True)
+    account_type = Column(String, nullable=True, index=True)
+
+    # ============================================
+    # 🔥 AGGREGATED AMOUNTS
+    # ============================================
+    total_dr = Column(MONEY, nullable=False, default=0)
+    total_cr = Column(MONEY, nullable=False, default=0)
+
+    # ============================================
+    # 🔥 FINAL METRIC
+    # ============================================
+    balance = Column(MONEY, nullable=True)
+
+    # ============================================
+    # 🔥 DIMENSION FK
+    # ============================================
+    coa_id = Column(
+        BigInteger,
+        ForeignKey("dim_coa.id"),
+        nullable=True,
+        index=True
+    )
+
+    # ============================================
+    # 🔥 RELATIONSHIPS
+    # ============================================
+    company = relationship("Company")
+    batch = relationship("IngestionBatch")
+    coa = relationship("DimCOA")
+
+    # ============================================
+    # 🔥 INDEXES + CONSTRAINTS (UPDATED 🚀)
+    # ============================================
+    __table_args__ = (
+
+        # 🔒 Prevent duplicate aggregation
+        UniqueConstraint(
+            "company_id", "batch_id", "year", "account",
+            name="uq_glrecon_unique"
+        ),
+
+        # 🚀 Core reporting index
+        Index("idx_glrecon_main", "company_id", "batch_id", "year", "account"),
+
+        # 📊 Account type filtering
+        Index("idx_glrecon_type", "company_id", "batch_id", "account_type", "year"),
+
+        # 🔍 Natural account lookup
+        Index("idx_glrecon_natural", "company_id", "natural_account"),
+
+        # ⚡ Covering index (Postgres only)
+        Index(
+            "idx_glrecon_covering",
+            "company_id", "batch_id", "year",
+            postgresql_include=["total_dr", "total_cr", "balance"]
+        ),
+    )
+# -----------------
+# Before closing
+# -----------------
+class FactGLSummaryBeforeClosing(Base):
+    __tablename__ = "fact_gl_summary_before_closing"
+
+    id = Column(BigInteger, primary_key=True, index=True)
+
+    # =========================
+    # TENANT CONTROL
+    # =========================
+    company_id = Column(
+        BigInteger,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    batch_id = Column(
+        BigInteger,
+        ForeignKey("ingestion_batches.id"),
+        nullable=False
+    )
+
+    year = Column(Integer, nullable=False)
+
+    # =========================
+    # FINANCIAL VALUES
+    # =========================
+    assets = Column(MONEY)
+    liabilities = Column(MONEY)
+    income = Column(MONEY)
+    expense = Column(MONEY)
+    equity = Column(MONEY)
+
+    # =========================
+    # DERIVED
+    # =========================
+    recon_balance = Column(MONEY)   # A - (L + I - E + SE)
+    net_income = Column(MONEY)      # I - E
+    sl_net_income = Column(MONEY)   # From subledger
+    sl_comparison = Column(MONEY)   # diff
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # =========================
+    # CONSTRAINTS
+    # =========================
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id", "batch_id", "year",
+            name="uq_gl_summary_before_closing"
+        ),
+
+        Index("idx_gl_summary_company_batch", "company_id", "batch_id"),
+        Index("idx_gl_summary_year", "year"),
     )
 
