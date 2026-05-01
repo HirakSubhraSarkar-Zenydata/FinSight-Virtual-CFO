@@ -3307,6 +3307,10 @@ from datetime import date, datetime
 
 from collections import defaultdict
 
+from sqlalchemy import case
+from sqlalchemy import text
+
+
 from models import (
     DimAssetValue,
     DimAssetValue,
@@ -3734,11 +3738,239 @@ def process_fact_general_ledger(db: Session, company_id: int, batch_id: int):
         # ADD OPENING FOR NEXT YEARS (NO CHANGE LOGIC)
         # ============================================
 
+        # opening_rows = []
+
+        # # get all years already present
+        # years = db.query(
+        # func.extract('year', FactGeneralLedger.order_date)
+        # ).filter(
+        #     FactGeneralLedger.company_id == company_id,
+        #     FactGeneralLedger.batch_id == batch_id,
+        #     FactGeneralLedger.is_closing_entry == False
+        # ).distinct().all()
+
+        # years = sorted([int(y[0]) for y in years if y[0]])
+
+        # for i in range(len(years) - 1):
+        #     prev_year = years[i]
+        #     next_year = years[i + 1]
+
+        #     # # get closing balance of CASH from previous year
+        #     # closing_balance = db.query(
+        #     #     (func.sum(FactGeneralLedger.dr_amount) - func.sum(FactGeneralLedger.cr_amount))
+        #     # ).filter(
+        #     #     FactGeneralLedger.company_id == company_id,
+        #     #     FactGeneralLedger.batch_id == batch_id,
+        #     #     func.extract('year', FactGeneralLedger.order_date) == prev_year,
+        #     #     FactGeneralLedger.account == "2040-0000-10"
+        #     # ).scalar()
+
+        #     # get closing balance from previous year (correct logic)
+        #     closing_balance = db.query(
+        #         func.coalesce(
+        #             func.sum(
+        #                 case(
+        #                     (
+        #                         FactGeneralLedger.account_type == 'Equity',
+        #                         FactGeneralLedger.cr_amount - FactGeneralLedger.dr_amount
+        #                     ),
+        #                     (
+        #                         FactGeneralLedger.account_type == 'Income',
+        #                         FactGeneralLedger.cr_amount - FactGeneralLedger.dr_amount
+        #                     ),
+        #                     (
+        #                         FactGeneralLedger.account_type == 'Expense',
+        #                         -(FactGeneralLedger.dr_amount - FactGeneralLedger.cr_amount)
+        #                     ),
+        #                     else_=0
+        #                 )
+        #             ),
+        #             0
+        #         )
+        #     ).filter(
+        #         FactGeneralLedger.company_id == company_id,
+        #         FactGeneralLedger.batch_id == batch_id,
+        #         func.extract('year', FactGeneralLedger.order_date) == prev_year,
+        #         FactGeneralLedger.is_closing_entry == False
+        #     ).scalar()
+
+        #     closing_balance = float(closing_balance or 0)
+
+        #     # add next year opening
+        #     opening_rows.append(FactGeneralLedger(
+        #         company_id=company_id,
+        #         batch_id=batch_id,
+        #         order_date=date(next_year, 1, 1),
+        #         month=1,
+        #         account="2040-0000-10",
+        #         dr_amount=closing_balance,
+        #         cr_amount=0,
+        #         natural_account="10",
+        #         account_subclass="Assets",
+        #         account_type="Assets",
+        #         sub_account="Cash at bank",
+        #         is_closing_entry=False
+        #     ))
+
+        #     opening_rows.append(FactGeneralLedger(
+        #         company_id=company_id,
+        #         batch_id=batch_id,
+        #         order_date=date(next_year, 1, 1),
+        #         month=1,
+        #         account="2040-0000-180",
+        #         dr_amount=0,
+        #         cr_amount=closing_balance,
+        #         natural_account="180",
+        #         account_subclass="Owners equity",
+        #         account_type="Equity",
+        #         sub_account="Share capital",
+        #         is_closing_entry=False
+        #     ))
+
+        # db.bulk_save_objects(opening_rows)
+        # db.commit()
+
+
+        
+
+        # ============================================
+        # 🔥 PRECOMPUTE YEARLY BALANCE (ONE QUERY)
+        # ============================================
+        # year_balance_map = {
+        #     int(row.year): float(row.balance or 0)
+        #     for row in db.query(
+        #         func.extract('year', FactGeneralLedger.order_date).label("year"),
+        #         func.sum(
+        #             case(
+        #                 (
+        #                     FactGeneralLedger.account_type == 'Equity',
+        #                     FactGeneralLedger.cr_amount - FactGeneralLedger.dr_amount
+        #                 ),
+        #                 (
+        #                     FactGeneralLedger.account_type == 'Income',
+        #                     FactGeneralLedger.cr_amount - FactGeneralLedger.dr_amount
+        #                 ),
+        #                 (
+        #             FactGeneralLedger.account_type == 'Expense',
+        #             -(FactGeneralLedger.dr_amount - FactGeneralLedger.cr_amount)
+        #                 ),
+        #                 else_=0
+        #             )
+        #         ).label("balance")
+        #     ).filter(
+        #         FactGeneralLedger.company_id == company_id,
+        #         FactGeneralLedger.batch_id == batch_id,
+        #         FactGeneralLedger.is_closing_entry == False
+        #     ).group_by(
+        #         func.extract('year', FactGeneralLedger.order_date)
+        #     ).all()
+        # }
+        # opening_rows = []
+        # year_balance_map = {
+        #     int(row.year): float(row.balance or 0)
+        #     for row in db.execute(text("""
+        #         WITH base AS (
+        #             SELECT
+        #                 EXTRACT(YEAR FROM order_date)::int AS year,
+        #                 account_type,
+        #                 dr_amount,
+        #                 cr_amount
+        #             FROM fact_general_ledger
+        #             WHERE
+        #                 company_id = :company_id
+        #                 AND batch_id = :batch_id
+        #                 AND is_closing_entry = false
+        #         )
+
+        #         SELECT
+        #             year,
+        #             SUM(
+        #                 CASE
+        #                     WHEN account_type = 'Equity' THEN (cr_amount - dr_amount)
+        #                     WHEN account_type = 'Income' THEN (cr_amount - dr_amount)
+        #                     WHEN account_type = 'Expense' THEN -(dr_amount - cr_amount)
+        #                     ELSE 0
+        #                 END
+        #             ) AS balance
+        #         FROM base
+        #         GROUP BY year
+        #     """), {
+        #         "company_id": company_id,
+        #         "batch_id": batch_id
+        #     })
+        # }
+
+        # # ============================================
+        # # GET ALL YEARS
+        # # ============================================
+        # years = db.query(
+        #     func.extract('year', FactGeneralLedger.order_date)
+        # ).filter(
+        #     FactGeneralLedger.company_id == company_id,
+        #     FactGeneralLedger.batch_id == batch_id,
+        #     FactGeneralLedger.is_closing_entry == False
+        # ).distinct().all()
+
+        # years = sorted([int(y[0]) for y in years if y[0]])
+
+        # # ============================================
+        # # LOOP (NO DB CALL INSIDE)
+        # # ============================================
+        # for i in range(len(years) - 1):
+        #     prev_year = years[i]
+        #     next_year = years[i + 1]
+
+        #     # 🔥 FAST LOOKUP
+        #     closing_balance = year_balance_map.get(prev_year, 0.0)
+
+        #     # ============================================
+        #     # ADD NEXT YEAR OPENING
+        #     # ============================================
+        #     opening_rows.append(FactGeneralLedger(
+        #         company_id=company_id,
+        #         batch_id=batch_id,
+        #         order_date=date(next_year, 1, 1),
+        #         month=1,
+        #         account="2040-0000-10",
+        #         dr_amount=closing_balance,
+        #         cr_amount=0,
+        #         natural_account="10",
+        #         account_subclass="Assets",
+        #         account_type="Assets",
+        #         sub_account="Cash at bank",
+        #         is_closing_entry=False
+        #     ))
+
+        #     opening_rows.append(FactGeneralLedger(
+        #         company_id=company_id,
+        #         batch_id=batch_id,
+        #         order_date=date(next_year, 1, 1),
+        #         month=1,
+        #         account="2040-0000-180",
+        #         dr_amount=0,
+        #         cr_amount=closing_balance,
+        #         natural_account="180",
+        #         account_subclass="Owners equity",
+        #         account_type="Equity",
+        #         sub_account="Share capital",
+        #         is_closing_entry=False
+        #     ))
+
+        # # ============================================
+        # # BULK INSERT
+        # # ============================================
+        # db.bulk_save_objects(opening_rows)
+        # db.commit()
+
+        # ============================================
+        # ADD OPENING FOR NEXT YEARS (FIXED QUERY ONLY)
+        # ============================================
+
         opening_rows = []
 
         # get all years already present
         years = db.query(
-        func.extract('year', FactGeneralLedger.order_date)
+            func.extract('year', FactGeneralLedger.order_date)
         ).filter(
             FactGeneralLedger.company_id == company_id,
             FactGeneralLedger.batch_id == batch_id,
@@ -3751,20 +3983,35 @@ def process_fact_general_ledger(db: Session, company_id: int, batch_id: int):
             prev_year = years[i]
             next_year = years[i + 1]
 
-            # get closing balance of CASH from previous year
-            closing_balance = db.query(
-                (func.sum(FactGeneralLedger.dr_amount) - func.sum(FactGeneralLedger.cr_amount))
-            ).filter(
-                FactGeneralLedger.company_id == company_id,
-                FactGeneralLedger.batch_id == batch_id,
-                func.extract('year', FactGeneralLedger.order_date) == prev_year,
-                FactGeneralLedger.account == "2040-0000-10"
-            ).scalar()
+            # ✅ FIXED: cumulative till prev_year
+            closing_balance = db.execute(text("""
+                SELECT COALESCE(SUM(
+                    CASE
+                        WHEN account_type = 'Equity' THEN (cr_amount - dr_amount)
+                        WHEN account_type = 'Income' THEN (cr_amount - dr_amount)
+                        WHEN account_type = 'Expense' THEN -(dr_amount - cr_amount)
+                        ELSE 0
+                    END
+                ), 0)
+                FROM fact_general_ledger
+                WHERE
+                    company_id = :company_id
+                    AND batch_id = :batch_id
+                    AND is_closing_entry = false
+                    AND EXTRACT(YEAR FROM order_date) = :prev_year
+            """), {
+                "company_id": company_id,
+                "batch_id": batch_id,
+                "prev_year": prev_year
+            }).scalar()
 
             closing_balance = float(closing_balance or 0)
 
-            # add next year opening
-            opening_rows.append(FactGeneralLedger(
+            # ============================================
+            # ADD NEXT YEAR OPENING
+            # ============================================
+             # 🔥 STEP 2: insert opening IMMEDIATELY
+            db.add(FactGeneralLedger(
                 company_id=company_id,
                 batch_id=batch_id,
                 order_date=date(next_year, 1, 1),
@@ -3779,7 +4026,7 @@ def process_fact_general_ledger(db: Session, company_id: int, batch_id: int):
                 is_closing_entry=False
             ))
 
-            opening_rows.append(FactGeneralLedger(
+            db.add(FactGeneralLedger(
                 company_id=company_id,
                 batch_id=batch_id,
                 order_date=date(next_year, 1, 1),
@@ -3794,13 +4041,12 @@ def process_fact_general_ledger(db: Session, company_id: int, batch_id: int):
                 is_closing_entry=False
             ))
 
-        db.bulk_save_objects(opening_rows)
-        db.commit()
-
+            # 🔥 CRITICAL: commit here
+            db.commit()
 
         return {
             "status": "success",
-            "rows_inserted": len(gl_rows) + len(closing_rows)
+            "rows_inserted": len(gl_rows) + len(closing_rows) + len(opening_rows)
         }
 
     except Exception as e:

@@ -92,6 +92,10 @@ from processors.fact_tax_processor import process_fact_tax # for tax calculation
 from processors.fact_general_ledger_processor import process_fact_general_ledger # for generating wide general ledger entries from SL and Asset Journal data, and also calculating tax amounts for each entry based on the tax processor output
 from processors.fact_gl_recon_processor import populate_fact_gl_recon # for reconciling the generated general ledger entries to ensure they tie out to the subledger and to calculate final balances for each account
 from processors.fact_gl_summary_before_closing import populate_gl_summary_before_closing # for populating the fact_gl_summary_before_closing table with aggregated data from the reconciled general ledger, and comparing to SL net income for validation before we generate closing entries
+from processors.fact_gl_summary_after_closing import populate_fact_gl_summary_after_closing # for populating the fact_gl_summary_after_closing table with aggregated data from the general ledger after closing entries have been generated, to validate that the books are balanced and to provide a final summary of assets, liabilities, and equity after closing
+from processors.fact_monthly_pnl_processor import populate_fact_monthly_pnl # for populating the fact_monthly_pnl table with monthly aggregated data from the general ledger, to enable monthly P&L reporting and analysis
+from processors.fact_monthly_bs_processor import populate_fact_monthly_bs # for populating the fact_monthly_bs table with monthly aggregated data from the fact_monthly_pnl table, to enable monthly balance sheet reporting and analysis
+from processors.fact_yearly_pnl_report_processor import populate_fact_yearly_pnl_report # for populating the fact_yearly_pnl_report table with aggregated yearly P&L data by line of business, to enable yearly P&L reporting and analysis
 
 router = APIRouter()
 
@@ -160,6 +164,18 @@ def start_processing(
 
         # Added step to populate the GL summary before closing
         populate_gl_summary_before_closing(db, user.company_id, batch_id)
+
+        # Added step to populate the GL summary after closing
+        populate_fact_gl_summary_after_closing(db, user.company_id, batch_id)
+
+        # Added step to populate the monthly P&L summary
+        populate_fact_monthly_pnl(db, user.company_id, batch_id)
+
+        # Added step to populate the monthly balance sheet summary
+        populate_fact_monthly_bs(db, user.company_id, batch_id)
+
+        # Added step to populate the yearly P&L report summary
+        populate_fact_yearly_pnl_report(db, user.company_id, batch_id)
 
         batch.status = "done"
         db.commit()

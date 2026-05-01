@@ -1744,6 +1744,197 @@ class FactGeneralLedger(Base):
 #         Index("idx_gl_month_type", "month", "account_type"),
 #     )
 
+# ----------------------------------------------------------
+# class FactGLRecon(Base):
+#     __tablename__ = "fact_gl_recon"
+
+#     # ============================================
+#     # 🔥 PRIMARY KEY
+#     # ============================================
+#     id = Column(BigInteger, primary_key=True, index=True)
+
+#     # ============================================
+#     # 🔥 TENANT / BATCH (FK ✅)
+#     # ============================================
+#     company_id = Column(
+#         BigInteger,
+#         ForeignKey("companies.id", ondelete="CASCADE"),
+#         nullable=False,
+#         index=True
+#     )
+
+#     batch_id = Column(
+#         BigInteger,
+#         ForeignKey("ingestion_batches.id", ondelete="CASCADE"),
+#         nullable=False,
+#         index=True
+#     )
+
+#     # ============================================
+#     # 🔥 GROUPING KEYS
+#     # ============================================
+#     year = Column(Integer, nullable=False, index=True)
+#     account = Column(String, nullable=False, index=True)
+
+#     # ============================================
+#     # 🔥 DERIVED ACCOUNT INFO
+#     # ============================================
+#     natural_account = Column(String, nullable=True, index=True)
+#     account_subclass = Column(String, nullable=True)
+#     account_type = Column(String, nullable=True, index=True)
+
+#     # ============================================
+#     # 🔥 AGGREGATED AMOUNTS
+#     # ============================================
+#     total_dr = Column(MONEY, nullable=False, default=0)
+#     total_cr = Column(MONEY, nullable=False, default=0)
+
+#     # ============================================
+#     # 🔥 FINAL METRIC
+#     # ============================================
+#     balance = Column(MONEY, nullable=True)
+
+#     # ============================================
+#     # 🔥 DIMENSION FK
+#     # ============================================
+#     coa_id = Column(
+#         BigInteger,
+#         ForeignKey("dim_coa.id"),
+#         nullable=True,
+#         index=True
+#     )
+
+#     # ============================================
+#     # 🔥 RELATIONSHIPS
+#     # ============================================
+#     company = relationship("Company")
+#     batch = relationship("IngestionBatch")
+#     coa = relationship("DimCOA")
+
+#     # ============================================
+#     # 🔥 INDEXES + CONSTRAINTS (UPDATED 🚀)
+#     # ============================================
+#     __table_args__ = (
+
+#         # 🔒 Prevent duplicate aggregation
+#         UniqueConstraint(
+#             "company_id", "batch_id", "year", "account",
+#             name="uq_glrecon_unique"
+#         ),
+
+#         # 🚀 Core reporting index
+#         Index("idx_glrecon_main", "company_id", "batch_id", "year", "account"),
+
+#         # 📊 Account type filtering
+#         Index("idx_glrecon_type", "company_id", "batch_id", "account_type", "year"),
+
+#         # 🔍 Natural account lookup
+#         Index("idx_glrecon_natural", "company_id", "natural_account"),
+
+#         # ⚡ Covering index (Postgres only)
+#         Index(
+#             "idx_glrecon_covering",
+#             "company_id", "batch_id", "year",
+#             postgresql_include=["total_dr", "total_cr", "balance"]
+#         ),
+#     )
+
+# -----------------------------------------------------------------
+# FACT GL RECON
+# -------------------------------------------------------------------
+# class FactGLRecon(Base):
+#     __tablename__ = "fact_gl_recon"
+
+#     # ============================================
+#     # 🔥 PRIMARY KEY
+#     # ============================================
+#     id = Column(BigInteger, primary_key=True, index=True)
+
+#     # ============================================
+#     # 🔥 TENANT / BATCH (FK ✅)
+#     # ============================================
+#     company_id = Column(
+#         BigInteger,
+#         ForeignKey("companies.id", ondelete="CASCADE"),
+#         nullable=False,
+#         index=True
+#     )
+
+#     batch_id = Column(
+#         BigInteger,
+#         ForeignKey("ingestion_batches.id", ondelete="CASCADE"),
+#         nullable=False,
+#         index=True
+#     )
+
+#     # ============================================
+#     # 🔥 GROUPING KEYS
+#     # ============================================
+#     year = Column(Integer, nullable=False, index=True)
+#     account = Column(String, nullable=False, index=True)
+
+#     # ============================================
+#     # 🔥 DERIVED ACCOUNT INFO
+#     # ============================================
+#     natural_account = Column(String, nullable=True, index=True)
+#     account_subclass = Column(String, nullable=True)
+#     account_type = Column(String, nullable=True, index=True)
+
+#     # ✅ MOVED HERE (as requested)
+#     account_name = Column(String, nullable=True)
+
+#     # ============================================
+#     # 🔥 AGGREGATED AMOUNTS
+#     # ============================================
+#     total_dr = Column(MONEY, nullable=False, default=0)
+#     total_cr = Column(MONEY, nullable=False, default=0)
+
+#     # ============================================
+#     # 🔥 FINAL METRIC
+#     # ============================================
+#     balance = Column(MONEY, nullable=True)
+
+#     # ============================================
+#     # 🔥 DIMENSION FK
+#     # ============================================
+#     coa_id = Column(
+#         BigInteger,
+#         ForeignKey("dim_coa.id"),
+#         nullable=True,
+#         index=True
+#     )
+
+#     # ============================================
+#     # 🔥 RELATIONSHIPS
+#     # ============================================
+#     company = relationship("Company")
+#     batch = relationship("IngestionBatch")
+#     coa = relationship("DimCOA")
+
+#     # ============================================
+#     # 🔥 INDEXES + CONSTRAINTS
+#     # ============================================
+#     __table_args__ = (
+
+#         UniqueConstraint(
+#             "company_id", "batch_id", "year", "account",
+#             name="uq_glrecon_unique"
+#         ),
+
+#         Index("idx_glrecon_main", "company_id", "batch_id", "year", "account"),
+
+#         Index("idx_glrecon_type", "company_id", "batch_id", "account_type", "year"),
+
+#         Index("idx_glrecon_natural", "company_id", "natural_account"),
+
+#         Index(
+#             "idx_glrecon_covering",
+#             "company_id", "batch_id", "year",
+#             postgresql_include=["total_dr", "total_cr", "balance"]
+#         ),
+#     )
+
+
 
 class FactGLRecon(Base):
     __tablename__ = "fact_gl_recon"
@@ -1754,7 +1945,7 @@ class FactGLRecon(Base):
     id = Column(BigInteger, primary_key=True, index=True)
 
     # ============================================
-    # 🔥 TENANT / BATCH (FK ✅)
+    # 🔥 TENANT / BATCH
     # ============================================
     company_id = Column(
         BigInteger,
@@ -1771,9 +1962,10 @@ class FactGLRecon(Base):
     )
 
     # ============================================
-    # 🔥 GROUPING KEYS
+    # 🔥 GRAIN (MONTHLY)  ✅ added month
     # ============================================
     year = Column(Integer, nullable=False, index=True)
+    month = Column(Integer, nullable=False, index=True)  # ✅ added
     account = Column(String, nullable=False, index=True)
 
     # ============================================
@@ -1782,15 +1974,16 @@ class FactGLRecon(Base):
     natural_account = Column(String, nullable=True, index=True)
     account_subclass = Column(String, nullable=True)
     account_type = Column(String, nullable=True, index=True)
+    account_name = Column(String, nullable=True)
 
     # ============================================
-    # 🔥 AGGREGATED AMOUNTS
+    # 🔥 AGGREGATED MONTHLY VALUES
     # ============================================
     total_dr = Column(MONEY, nullable=False, default=0)
     total_cr = Column(MONEY, nullable=False, default=0)
 
     # ============================================
-    # 🔥 FINAL METRIC
+    # 🔥 MONTH-END BALANCE
     # ============================================
     balance = Column(MONEY, nullable=True)
 
@@ -1812,32 +2005,40 @@ class FactGLRecon(Base):
     coa = relationship("DimCOA")
 
     # ============================================
-    # 🔥 INDEXES + CONSTRAINTS (UPDATED 🚀)
+    # 🔥 CONSTRAINTS + INDEXES
     # ============================================
     __table_args__ = (
 
-        # 🔒 Prevent duplicate aggregation
+        # ✅ UPDATED UNIQUE (added month)
         UniqueConstraint(
-            "company_id", "batch_id", "year", "account",
-            name="uq_glrecon_unique"
+            "company_id", "batch_id", "year", "month", "account",
+            name="uq_glrecon_monthly"
         ),
 
-        # 🚀 Core reporting index
-        Index("idx_glrecon_main", "company_id", "batch_id", "year", "account"),
-
-        # 📊 Account type filtering
-        Index("idx_glrecon_type", "company_id", "batch_id", "account_type", "year"),
-
-        # 🔍 Natural account lookup
-        Index("idx_glrecon_natural", "company_id", "natural_account"),
-
-        # ⚡ Covering index (Postgres only)
+        # ✅ UPDATED INDEX (added month)
         Index(
-            "idx_glrecon_covering",
-            "company_id", "batch_id", "year",
+            "idx_glrecon_monthly_main",
+            "company_id", "batch_id", "year", "month", "account"
+        ),
+
+        Index(
+            "idx_glrecon_monthly_type",
+            "company_id", "batch_id", "account_type", "year", "month"
+        ),
+
+        Index(
+            "idx_glrecon_monthly_natural",
+            "company_id", "natural_account"
+        ),
+
+        Index(
+            "idx_glrecon_monthly_covering",
+            "company_id", "batch_id", "year", "month",
             postgresql_include=["total_dr", "total_cr", "balance"]
         ),
     )
+
+
 # -----------------
 # Before closing
 # -----------------
@@ -1895,3 +2096,347 @@ class FactGLSummaryBeforeClosing(Base):
         Index("idx_gl_summary_year", "year"),
     )
 
+
+# ------------------------------------------------------------
+# After closing
+# ------------------------------------------------------------
+class FactGLSummaryAfterClosing(Base):
+    __tablename__ = "fact_gl_summary_after_closing"
+
+    # ============================================
+    # 🔥 PRIMARY KEY
+    # ============================================
+    id = Column(BigInteger, primary_key=True, index=True)
+
+    # ============================================
+    # 🔥 TENANT / BATCH
+    # ============================================
+    company_id = Column(
+        BigInteger,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    batch_id = Column(
+        BigInteger,
+        ForeignKey("ingestion_batches.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    # ============================================
+    # 🔥 GRAIN
+    # ============================================
+    year = Column(Integer, nullable=False, index=True)
+
+    # ============================================
+    # 🔥 METRICS
+    # ============================================
+    total_assets = Column(MONEY, nullable=False, default=0)
+    total_liabilities = Column(MONEY, nullable=False, default=0)
+    total_equity = Column(MONEY, nullable=False, default=0)
+
+    # ============================================
+    # 🔥 FINAL CHECK
+    # ============================================
+    difference = Column(MONEY, nullable=True)  # A - (L + SE)
+
+    # ============================================
+    # 🔥 RELATIONSHIPS
+    # ============================================
+    company = relationship("Company")
+    batch = relationship("IngestionBatch")
+
+    # ============================================
+    # 🔥 CONSTRAINTS + INDEXES
+    # ============================================
+    __table_args__ = (
+
+        UniqueConstraint(
+            "company_id", "batch_id", "year",
+            name="uq_gl_summary_after_closing"
+        ),
+
+        Index("idx_gl_summary_main", "company_id", "batch_id", "year"),
+    )
+
+
+
+# -----------------------------------------------------------------
+# Monthly P&L Summary 
+# -----------------------------------------------------------------
+# class FactMonthlyPnL(Base):
+#     __tablename__ = "fact_monthly_pnl"
+
+#     # ============================================
+#     # 🔥 PRIMARY KEY
+#     # ============================================
+#     id = Column(BigInteger, primary_key=True, index=True)
+
+#     # ============================================
+#     # 🔥 TENANT / BATCH
+#     # ============================================
+#     company_id = Column(
+#         BigInteger,
+#         ForeignKey("companies.id", ondelete="CASCADE"),
+#         nullable=False
+#     )
+
+#     batch_id = Column(
+#         BigInteger,
+#         ForeignKey("ingestion_batches.id", ondelete="CASCADE"),
+#         nullable=False
+#     )
+
+#     # ============================================
+#     # 🔥 GRAIN
+#     # ============================================
+#     year = Column(Integer, nullable=False)
+#     month = Column(Integer, nullable=False)
+
+#     # ============================================
+#     # 🔥 METRICS (DR / CR split)
+#     # ============================================
+#     assets_dr = Column(MONEY, default=0)
+#     assets_cr = Column(MONEY, default=0)
+
+#     liabilities_dr = Column(MONEY, default=0)
+#     liabilities_cr = Column(MONEY, default=0)
+
+#     equity_dr = Column(MONEY, default=0)
+#     equity_cr = Column(MONEY, default=0)
+
+#     expense_dr = Column(MONEY, default=0)
+#     expense_cr = Column(MONEY, default=0)
+
+#     income_dr = Column(MONEY, default=0)
+#     income_cr = Column(MONEY, default=0)
+
+#     # ============================================
+#     # 🔥 RELATIONSHIPS
+#     # ============================================
+#     company = relationship("Company")
+#     batch = relationship("IngestionBatch")
+
+#     # ============================================
+#     # 🔥 CONSTRAINTS (Minimal & Effective)
+#     # ============================================
+#     __table_args__ = (
+
+#         # Prevent duplicates (core requirement)
+#         UniqueConstraint(
+#             "company_id", "batch_id", "year", "month",
+#             name="uq_fact_monthly_pnl"
+#         ),
+
+#         # Single reporting index (enough)
+#         Index(
+#             "idx_monthly_pnl_main",
+#             "company_id", "batch_id", "year", "month"
+#         ),
+#     )
+
+class FactMonthlyPnL(Base):
+    __tablename__ = "fact_monthly_pnl"
+
+    # ============================================
+    # 🔥 PRIMARY KEY
+    # ============================================
+    id = Column(BigInteger, primary_key=True, index=True)
+
+    # ============================================
+    # 🔥 TENANT / BATCH
+    # ============================================
+    company_id = Column(
+        BigInteger,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    batch_id = Column(
+        BigInteger,
+        ForeignKey("ingestion_batches.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    # ============================================
+    # 🔥 GRAIN
+    # ============================================
+    year = Column(Integer, nullable=False)
+    month = Column(Integer, nullable=False)
+
+    # ✅ NEW COLUMN (LOB)
+    lob = Column(String(50), nullable=False)
+
+    # ============================================
+    # 🔥 METRICS (DR / CR split)
+    # ============================================
+    assets_dr = Column(MONEY, default=0)
+    assets_cr = Column(MONEY, default=0)
+
+    liabilities_dr = Column(MONEY, default=0)
+    liabilities_cr = Column(MONEY, default=0)
+
+    equity_dr = Column(MONEY, default=0)
+    equity_cr = Column(MONEY, default=0)
+
+    expense_dr = Column(MONEY, default=0)
+    expense_cr = Column(MONEY, default=0)
+
+    income_dr = Column(MONEY, default=0)
+    income_cr = Column(MONEY, default=0)
+
+    # ============================================
+    # 🔥 RELATIONSHIPS
+    # ============================================
+    company = relationship("Company")
+    batch = relationship("IngestionBatch")
+
+    # ============================================
+    # 🔥 CONSTRAINTS
+    # ============================================
+    __table_args__ = (
+
+        # ✅ UPDATED UNIQUE (includes LOB)
+        UniqueConstraint(
+            "company_id", "batch_id", "year", "month", "lob",
+            name="uq_fact_monthly_pnl"
+        ),
+
+        # ✅ UPDATED INDEX
+        Index(
+            "idx_monthly_pnl_main",
+            "company_id", "batch_id", "year", "month", "lob"
+        ),
+    )
+
+
+
+# -------------------------------------------------------------
+# Monthly Balance Sheet Summary (NEW)
+# -------------------------------------------------------------
+class FactMonthlyBS(Base):
+    __tablename__ = "fact_monthly_bs"
+
+    # ============================================
+    # PRIMARY KEY
+    # ============================================
+    id = Column(BigInteger, primary_key=True, index=True)
+
+    # ============================================
+    # TENANT / BATCH
+    # ============================================
+    company_id = Column(
+        BigInteger,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    batch_id = Column(
+        BigInteger,
+        ForeignKey("ingestion_batches.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    # ============================================
+    # GRAIN
+    # ============================================
+    year = Column(Integer, nullable=False)
+    month = Column(Integer, nullable=False)
+    lob = Column(String(50), nullable=False)
+
+    # ============================================
+    # CUMULATIVE VALUES (BALANCE SHEET)
+    # ============================================
+    assets_dr = Column(MONEY, default=0)
+    assets_cr = Column(MONEY, default=0)
+
+    liabilities_dr = Column(MONEY, default=0)
+    liabilities_cr = Column(MONEY, default=0)
+
+    equity_dr = Column(MONEY, default=0)
+    equity_cr = Column(MONEY, default=0)
+
+    expense_dr = Column(MONEY, default=0)
+    expense_cr = Column(MONEY, default=0)
+
+    income_dr = Column(MONEY, default=0)
+    income_cr = Column(MONEY, default=0)
+
+    # ============================================
+    # RELATIONSHIPS
+    # ============================================
+    company = relationship("Company")
+    batch = relationship("IngestionBatch")
+
+    # ============================================
+    # CONSTRAINTS
+    # ============================================
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id", "batch_id", "year", "month", "lob",
+            name="uq_fact_monthly_bs"
+        ),
+        Index(
+            "idx_monthly_bs_main",
+            "company_id", "batch_id", "year", "month", "lob"
+        ),
+    )
+
+
+# --------------------------------------------------------------------------
+# Yearly P&L Summary (NEW)
+# --------------------------------------------------------------------------
+class FactYearlyPnLReport(Base):
+    __tablename__ = "fact_yearly_pnl_report"
+
+    # ============================================
+    # PRIMARY KEY
+    # ============================================
+    id = Column(BigInteger, primary_key=True, index=True)
+
+    # ============================================
+    # TENANT / BATCH
+    # ============================================
+    company_id = Column(
+        BigInteger,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    batch_id = Column(
+        BigInteger,
+        ForeignKey("ingestion_batches.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    # ============================================
+    # GRAIN
+    # ============================================
+    year = Column(Integer, nullable=False)
+    lob = Column(String(50), nullable=False)
+
+    # ============================================
+    # 🔥 METRIC LAYER
+    # ============================================
+    metric_name = Column(String(100), nullable=False)
+    metric_order = Column(Integer, nullable=False)  # 🔥 for UI ordering
+
+    amount = Column(MONEY, default=0)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # ============================================
+    # CONSTRAINTS
+    # ============================================
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id", "batch_id", "year", "lob", "metric_name",
+            name="uq_yearly_pnl_metric"
+        ),
+        Index(
+            "idx_yearly_pnl_report",
+            "company_id", "batch_id", "year", "lob"
+        ),
+    )
