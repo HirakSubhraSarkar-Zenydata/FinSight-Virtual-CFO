@@ -11,20 +11,13 @@ def populate_fact_yearly_pnl_report(db, company_id: int, batch_id: int):
                 f.year,
 
                 -- 🔥 LOB (Country from Geography)
-                COALESCE(g.country, 'Unknown') AS lob,
+                COALESCE(f.lob, 'Unknown') AS lob,
 
                 LOWER(f.account_subclass) AS subclass,
 
                 SUM(f.balance::numeric) AS amount
 
             FROM fact_gl_recon f
-
-            LEFT JOIN dim_bsv_tax_rate b
-                ON split_part(f.account, '-', 1) = b.bsv_code
-                AND b.company_id = f.company_id
-
-            LEFT JOIN dim_geography g
-                ON b.geography_id = g.id
 
             WHERE f.company_id = :company_id
               AND f.batch_id = :batch_id
@@ -33,7 +26,7 @@ def populate_fact_yearly_pnl_report(db, company_id: int, batch_id: int):
                 f.company_id,
                 f.batch_id,
                 f.year,
-                g.country,
+                f.lob,
                 LOWER(f.account_subclass)
         ),
 

@@ -96,6 +96,7 @@ from processors.fact_gl_summary_after_closing import populate_fact_gl_summary_af
 from processors.fact_monthly_pnl_processor import populate_fact_monthly_pnl # for populating the fact_monthly_pnl table with monthly aggregated data from the general ledger, to enable monthly P&L reporting and analysis
 from processors.fact_monthly_bs_processor import populate_fact_monthly_bs # for populating the fact_monthly_bs table with monthly aggregated data from the fact_monthly_pnl table, to enable monthly balance sheet reporting and analysis
 from processors.fact_yearly_pnl_report_processor import populate_fact_yearly_pnl_report # for populating the fact_yearly_pnl_report table with aggregated yearly P&L data by line of business, to enable yearly P&L reporting and analysis
+from processors.fact_yearly_bs_report_processor import populate_fact_yearly_bs_report # for populating the fact_yearly_bs_report table with aggregated yearly balance sheet data by line of business, to enable yearly balance sheet reporting and analysis
 
 router = APIRouter()
 
@@ -176,6 +177,9 @@ def start_processing(
 
         # Added step to populate the yearly P&L report summary
         populate_fact_yearly_pnl_report(db, user.company_id, batch_id)
+
+        # Added step to populate the yearly balance sheet report summary
+        populate_fact_yearly_bs_report(db, user.company_id, batch_id)   
 
         batch.status = "done"
         db.commit()

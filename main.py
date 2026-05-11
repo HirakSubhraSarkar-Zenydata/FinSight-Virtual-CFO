@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from auth import router as auth_router     # Make sure this imports correctly
 from ingestion import router as ingestion_router  # ← Add this when ready
 from processing import router as processing_router  # ← Add this when ready
+from reporting.yearly_pnl import router as pnl_router
 from database import engine
 from models import Base
 
@@ -15,6 +16,7 @@ app = FastAPI(
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(ingestion_router, prefix="/ingestion", tags=["Ingestion"])  # Uncomment when ingestion is ready
 app.include_router(processing_router, prefix="/processing", tags=["Processing"])  # Uncomment when processing is ready
+app.include_router(pnl_router, prefix="/reporting/pnl", tags=["PnL Reporting"])  # Uncomment when PnL reporting is ready
 
 @app.get("/")
 def root():

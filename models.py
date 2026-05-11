@@ -1936,6 +1936,110 @@ class FactGeneralLedger(Base):
 
 
 
+# class FactGLRecon(Base):
+#     __tablename__ = "fact_gl_recon"
+
+#     # ============================================
+#     # 🔥 PRIMARY KEY
+#     # ============================================
+#     id = Column(BigInteger, primary_key=True, index=True)
+
+#     # ============================================
+#     # 🔥 TENANT / BATCH
+#     # ============================================
+#     company_id = Column(
+#         BigInteger,
+#         ForeignKey("companies.id", ondelete="CASCADE"),
+#         nullable=False,
+#         index=True
+#     )
+
+#     batch_id = Column(
+#         BigInteger,
+#         ForeignKey("ingestion_batches.id", ondelete="CASCADE"),
+#         nullable=False,
+#         index=True
+#     )
+
+#     # ============================================
+#     # 🔥 GRAIN (MONTHLY)  ✅ added month
+#     # ============================================
+#     year = Column(Integer, nullable=False, index=True)
+#     month = Column(Integer, nullable=False, index=True)  # ✅ added
+#     account = Column(String, nullable=False, index=True)
+
+#     # ============================================
+#     # 🔥 DERIVED ACCOUNT INFO
+#     # ============================================
+#     natural_account = Column(String, nullable=True, index=True)
+#     account_subclass = Column(String, nullable=True)
+#     account_type = Column(String, nullable=True, index=True)
+#     account_name = Column(String, nullable=True)
+
+#     # ============================================
+#     # 🔥 AGGREGATED MONTHLY VALUES
+#     # ============================================
+#     total_dr = Column(MONEY, nullable=False, default=0)
+#     total_cr = Column(MONEY, nullable=False, default=0)
+
+#     # ============================================
+#     # 🔥 MONTH-END BALANCE
+#     # ============================================
+#     balance = Column(MONEY, nullable=True)
+
+#     # ============================================
+#     # 🔥 DIMENSION FK
+#     # ============================================
+#     coa_id = Column(
+#         BigInteger,
+#         ForeignKey("dim_coa.id"),
+#         nullable=True,
+#         index=True
+#     )
+
+#     # ============================================
+#     # 🔥 RELATIONSHIPS
+#     # ============================================
+#     company = relationship("Company")
+#     batch = relationship("IngestionBatch")
+#     coa = relationship("DimCOA")
+
+#     # ============================================
+#     # 🔥 CONSTRAINTS + INDEXES
+#     # ============================================
+#     __table_args__ = (
+
+#         # ✅ UPDATED UNIQUE (added month)
+#         UniqueConstraint(
+#             "company_id", "batch_id", "year", "month", "account",
+#             name="uq_glrecon_monthly"
+#         ),
+
+#         # ✅ UPDATED INDEX (added month)
+#         Index(
+#             "idx_glrecon_monthly_main",
+#             "company_id", "batch_id", "year", "month", "account"
+#         ),
+
+#         Index(
+#             "idx_glrecon_monthly_type",
+#             "company_id", "batch_id", "account_type", "year", "month"
+#         ),
+
+#         Index(
+#             "idx_glrecon_monthly_natural",
+#             "company_id", "natural_account"
+#         ),
+
+#         Index(
+#             "idx_glrecon_monthly_covering",
+#             "company_id", "batch_id", "year", "month",
+#             postgresql_include=["total_dr", "total_cr", "balance"]
+#         ),
+#     )
+
+
+
 class FactGLRecon(Base):
     __tablename__ = "fact_gl_recon"
 
@@ -1962,10 +2066,10 @@ class FactGLRecon(Base):
     )
 
     # ============================================
-    # 🔥 GRAIN (MONTHLY)  ✅ added month
+    # 🔥 GRAIN (MONTHLY)
     # ============================================
     year = Column(Integer, nullable=False, index=True)
-    month = Column(Integer, nullable=False, index=True)  # ✅ added
+    month = Column(Integer, nullable=False, index=True)
     account = Column(String, nullable=False, index=True)
 
     # ============================================
@@ -1975,6 +2079,22 @@ class FactGLRecon(Base):
     account_subclass = Column(String, nullable=True)
     account_type = Column(String, nullable=True, index=True)
     account_name = Column(String, nullable=True)
+
+    # ============================================
+    # 🔥 NEW: BSV / GEOGRAPHY / LOB
+    # ============================================
+    bsv_code = Column(String, nullable=True, index=True)
+
+    geography_id = Column(
+        BigInteger,
+        ForeignKey("dim_geography.id"),
+        nullable=True,
+        index=True
+    )
+
+    country = Column(String, nullable=True, index=True)
+
+    lob = Column(String, nullable=True, index=True)  # lob = country
 
     # ============================================
     # 🔥 AGGREGATED MONTHLY VALUES
@@ -2003,19 +2123,18 @@ class FactGLRecon(Base):
     company = relationship("Company")
     batch = relationship("IngestionBatch")
     coa = relationship("DimCOA")
+    geography = relationship("DimGeography")
 
     # ============================================
     # 🔥 CONSTRAINTS + INDEXES
     # ============================================
     __table_args__ = (
 
-        # ✅ UPDATED UNIQUE (added month)
         UniqueConstraint(
             "company_id", "batch_id", "year", "month", "account",
             name="uq_glrecon_monthly"
         ),
 
-        # ✅ UPDATED INDEX (added month)
         Index(
             "idx_glrecon_monthly_main",
             "company_id", "batch_id", "year", "month", "account"
@@ -2029,6 +2148,18 @@ class FactGLRecon(Base):
         Index(
             "idx_glrecon_monthly_natural",
             "company_id", "natural_account"
+        ),
+
+        # 🔥 NEW: optimized for BSV + geography lookup queries
+        Index(
+            "idx_glrecon_bsv_geo",
+            "company_id", "batch_id", "bsv_code", "geography_id"
+        ),
+
+        # 🔥 NEW: for country / lob filtering (reporting)
+        Index(
+            "idx_glrecon_country_lob",
+            "company_id", "batch_id", "country", "lob"
         ),
 
         Index(
@@ -2437,6 +2568,71 @@ class FactYearlyPnLReport(Base):
         ),
         Index(
             "idx_yearly_pnl_report",
+            "company_id", "batch_id", "year", "lob"
+        ),
+    )
+
+
+
+class FactYearlyBSReport(Base):
+    __tablename__ = "fact_yearly_bs_report"
+
+    # ============================================
+    # PRIMARY KEY
+    # ============================================
+    id = Column(BigInteger, primary_key=True, index=True)
+
+    # ============================================
+    # TENANT / BATCH
+    # ============================================
+    company_id = Column(
+        BigInteger,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    batch_id = Column(
+        BigInteger,
+        ForeignKey("ingestion_batches.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    # ============================================
+    # GRAIN
+    # ============================================
+    year = Column(Integer, nullable=False)
+    lob = Column(String(50), nullable=False)
+
+    # ============================================
+    # DIMENSION (FOR GROUPING)
+    # ============================================
+    section = Column(String(50), nullable=False)
+    # asset / liabilities / equity / total
+
+    account_subclass = Column(String(100), nullable=True)
+
+    # ============================================
+    # METRIC
+    # ============================================
+    metric_name = Column(String(100), nullable=False)
+    amount = Column(MONEY, default=0)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # ============================================
+    # CONSTRAINTS + INDEXES
+    # ============================================
+    __table_args__ = (
+
+        # prevent duplicates
+        UniqueConstraint(
+            "company_id", "batch_id", "year", "lob", "metric_name",
+            name="uq_yearly_bs_metric"
+        ),
+
+        # 🔥 ONLY INDEX YOU REALLY NEED (covers your API filter)
+        Index(
+            "idx_bs_main",
             "company_id", "batch_id", "year", "lob"
         ),
     )
