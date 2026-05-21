@@ -131,6 +131,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, foreign
 from database import Base
 from sqlalchemy import func
+from sqlalchemy import PrimaryKeyConstraint
 
 # ============================================================
 # ENUMS
@@ -489,7 +490,13 @@ class DimGeography(Base):
 class DimCOA(Base):
     __tablename__ = "dim_coa"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    # id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(
+    BigInteger,
+    primary_key=True,
+    autoincrement=True,
+    index=True
+    )
     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"), nullable=False)
 
@@ -519,7 +526,9 @@ class DimCOA(Base):
 
     __table_args__ = (
         UniqueConstraint("company_id", "account_key", "batch_id", name="uq_coa_company_account_batch"),
-        UniqueConstraint("id", "company_id", name="uq_coa_id_company"),
+        # UniqueConstraint("id", "company_id", name="uq_coa_id_company"),
+        # ADD THIS:
+        UniqueConstraint("id", "company_id", "batch_id", name="uq_dim_coa_id_company_batch"),
 
         Index("idx_coa_company", "company_id"),
         Index("idx_coa_batch", "company_id", "batch_id"),
@@ -534,7 +543,8 @@ class DimCOA(Base):
 class DimProduct(Base):
     __tablename__ = "dim_product"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    # id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(BigInteger, nullable=False, index=True)
     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"), nullable=False)
 
@@ -556,7 +566,13 @@ class DimProduct(Base):
 
     __table_args__ = (
         UniqueConstraint("company_id", "product_code", "batch_id", name="uq_product_code_batch"),
-        UniqueConstraint("id", "company_id", name="uq_product_id_company"),
+        # UniqueConstraint("id", "company_id", name="uq_product_id_company"),
+        PrimaryKeyConstraint(
+            "id",
+            "company_id",
+            "batch_id",
+            name="pk_dim_product"
+        ),
 
         Index("idx_product_company", "company_id"),
         Index("idx_product_batch", "company_id", "batch_id"),
@@ -569,7 +585,13 @@ class DimProduct(Base):
 class DimBSVTaxRate(Base):
     __tablename__ = "dim_bsv_tax_rate"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    # id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(
+    BigInteger,
+    primary_key=True,
+    autoincrement=True,
+    index=True
+    )
     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"), nullable=False)
 
@@ -591,7 +613,9 @@ class DimBSVTaxRate(Base):
 
     __table_args__ = (
         UniqueConstraint("company_id", "geography_id", "bsv_code", "batch_id", name="uq_bsv_batch"),
-        UniqueConstraint("id", "company_id", name="uq_bsv_id_company"),
+        # UniqueConstraint("id", "company_id", name="uq_bsv_id_company"),
+        # 🔥 ADD THIS
+        UniqueConstraint("id", "company_id", "batch_id", name="uq_dim_bsv_id_company_batch"),
 
         Index("idx_bsv_company", "company_id"),
         Index("idx_bsv_batch", "company_id", "batch_id"),
@@ -606,7 +630,13 @@ class DimBSVTaxRate(Base):
 class DimCustomer(Base):
     __tablename__ = "dim_customer"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    # id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(
+    BigInteger,
+    primary_key=True,
+    autoincrement=True,
+    index=True
+    )
     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"), nullable=False)
 
@@ -625,7 +655,9 @@ class DimCustomer(Base):
 
     __table_args__ = (
         UniqueConstraint("company_id", "customer_name", "batch_id", name="uq_customer_name_batch"),
-        UniqueConstraint("id", "company_id", name="uq_customer_id_company"),
+        # UniqueConstraint("id", "company_id", name="uq_customer_id_company"),
+        # 🔥 THIS IS THE MISSING PIECE
+        UniqueConstraint("id", "company_id", "batch_id", name="uq_dim_customer_id_company_batch"),
 
         Index("idx_customer_company", "company_id"),
         Index("idx_customer_batch", "company_id", "batch_id"),
@@ -812,21 +844,53 @@ class FactSubLedger(Base):
     source_file = relationship("FileUpload", back_populates="subledger_facts")
     sl_accounting_lines = relationship("FactSLAccounting", back_populates="subledger")
 
-    coa = relationship("DimCOA", primaryjoin=and_(foreign(coa_id) == DimCOA.id, foreign(company_id) == DimCOA.company_id),
+    coa = relationship("DimCOA", primaryjoin=and_(foreign(coa_id) == DimCOA.id, foreign(company_id) == DimCOA.company_id, foreign(batch_id) == DimCOA.batch_id),
                        back_populates="subledger_facts", overlaps="company", viewonly=True)
-    product = relationship("DimProduct", primaryjoin=and_(foreign(product_id) == DimProduct.id, foreign(company_id) == DimProduct.company_id),
-                           back_populates="subledger_facts", overlaps="company,coa", viewonly=True)
-    customer = relationship("DimCustomer", primaryjoin=and_(foreign(customer_id) == DimCustomer.id, foreign(company_id) == DimCustomer.company_id),
+    # product = relationship("DimProduct", primaryjoin=and_(foreign(product_id) == DimProduct.id, foreign(company_id) == DimProduct.company_id),
+    #                        back_populates="subledger_facts", overlaps="company,coa", viewonly=True)
+    product = relationship("DimProduct", primaryjoin=and_(foreign(product_id) == DimProduct.id, foreign(company_id) == DimProduct.company_id, foreign(batch_id) == DimProduct.batch_id),
+                        back_populates="subledger_facts", overlaps="company,coa", viewonly=True)
+    # customer = relationship("DimCustomer", primaryjoin=and_(foreign(customer_id) == DimCustomer.id, foreign(company_id) == DimCustomer.company_id),
+    #                         back_populates="subledger_facts", overlaps="company,coa,product", viewonly=True)
+    customer = relationship("DimCustomer",primaryjoin=and_(foreign(customer_id) == DimCustomer.id, foreign(company_id) == DimCustomer.company_id, foreign(batch_id) == DimCustomer.batch_id),
                             back_populates="subledger_facts", overlaps="company,coa,product", viewonly=True)
-    bsv_tax = relationship("DimBSVTaxRate", primaryjoin=and_(foreign(bsv_tax_id) == DimBSVTaxRate.id, foreign(company_id) == DimBSVTaxRate.company_id),
+    bsv_tax = relationship("DimBSVTaxRate", primaryjoin=and_(foreign(bsv_tax_id) == DimBSVTaxRate.id, foreign(company_id) == DimBSVTaxRate.company_id, foreign(batch_id) == DimBSVTaxRate.batch_id),
                            back_populates="subledger_facts", overlaps="company,coa,product,customer", viewonly=True)
 
     __table_args__ = (
-        UniqueConstraint("company_id", "order_id", "date", "coa_id", name="uq_fact_unique"),
-        ForeignKeyConstraint(["coa_id", "company_id"], ["dim_coa.id", "dim_coa.company_id"], name="fk_fact_coa_tenant"),
-        ForeignKeyConstraint(["product_id", "company_id"], ["dim_product.id", "dim_product.company_id"], name="fk_fact_product_tenant"),
-        ForeignKeyConstraint(["customer_id", "company_id"], ["dim_customer.id", "dim_customer.company_id"], name="fk_fact_customer_tenant"),
-        ForeignKeyConstraint(["bsv_tax_id", "company_id"], ["dim_bsv_tax_rate.id", "dim_bsv_tax_rate.company_id"], name="fk_fact_bsv_tenant"),
+        # UniqueConstraint("company_id", "order_id", "date", "coa_id", name="uq_fact_unique"),
+        UniqueConstraint(
+            "company_id",
+            "batch_id",
+            "order_id",
+            "date",
+            "coa_id",
+            name="uq_fact_unique"
+        ),
+        # ForeignKeyConstraint(["coa_id", "company_id"], ["dim_coa.id", "dim_coa.company_id"], name="fk_fact_coa_tenant"),
+        ForeignKeyConstraint(
+            ["coa_id", "company_id", "batch_id"],
+            ["dim_coa.id", "dim_coa.company_id", "dim_coa.batch_id"],
+            name="fk_fact_coa_tenant"
+        ),
+        ForeignKeyConstraint(
+            ["product_id", "company_id", "batch_id"],
+            ["dim_product.id", "dim_product.company_id", "dim_product.batch_id"],
+            name="fk_fact_product_tenant"
+        ),  
+        # ForeignKeyConstraint(["product_id", "company_id"], ["dim_product.id", "dim_product.company_id"], name="fk_fact_product_tenant"),
+        # ForeignKeyConstraint(["customer_id", "company_id"], ["dim_customer.id", "dim_customer.company_id"], name="fk_fact_customer_tenant"),
+        ForeignKeyConstraint(
+            ["customer_id", "company_id", "batch_id"],
+            ["dim_customer.id", "dim_customer.company_id", "dim_customer.batch_id"],
+            name="fk_fact_customer_tenant"
+        ),  
+        # ForeignKeyConstraint(["bsv_tax_id", "company_id"], ["dim_bsv_tax_rate.id", "dim_bsv_tax_rate.company_id"], name="fk_fact_bsv_tenant"),
+        ForeignKeyConstraint(
+            ["bsv_tax_id", "company_id", "batch_id"],
+            ["dim_bsv_tax_rate.id", "dim_bsv_tax_rate.company_id", "dim_bsv_tax_rate.batch_id"],
+            name="fk_fact_bsv_tenant"
+        ),
         Index("idx_fact_company", "company_id"),
         Index("idx_fact_company_date", "company_id", "date"),
 
@@ -843,6 +907,72 @@ class FactSubLedger(Base):
         Index("idx_fact_is_deleted", "company_id", "is_deleted"),
     )
 
+
+# class FactSLAccounting(Base):
+#     __tablename__ = "fact_slaccounting"
+
+#     id = Column(BigInteger, primary_key=True, index=True)
+#     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+#     subledger_id = Column(BigInteger, ForeignKey("fact_subledger.id", ondelete="CASCADE"), nullable=True)
+#     source_type = Column(SourceTypeEnum, nullable=False, default="SUBLEDGER")
+
+#     journal_group_id = Column(String(200), nullable=False)
+#     coa_bsv = Column(String(50), nullable=True)
+#     coa_product = Column(String(50), nullable=True)
+
+#     line_type = Column(String(50), nullable=False)
+#     movement_type = Column(String(50), nullable=False, default=MOVEMENT_DEFAULT)
+#     entry_index = Column(Integer, nullable=False)
+#     side = Column(JournalSideEnum, nullable=False)
+
+#     account_code = Column(String(100), nullable=False)
+#     coa_id = Column(BigInteger, ForeignKey("dim_coa.id"), nullable=True)
+#     standard_code = Column(String(50), ForeignKey("standard_accounts.code"), nullable=True)
+
+#     amount = Column(MONEY, nullable=False, default=0)
+
+#     order_id = Column(String(100), nullable=True)
+#     date = Column(Date, ForeignKey("dim_date.date"), nullable=False)
+#     product_id = Column(BigInteger, nullable=True)
+#     customer_id = Column(BigInteger, nullable=True)
+#     geography_id = Column(BigInteger, ForeignKey("dim_geography.id"), nullable=True)
+
+#     batch_id = Column(BigInteger, ForeignKey("ingestion_batches.id"), nullable=True)
+#     source_file_id = Column(BigInteger, ForeignKey("file_uploads.id"), nullable=True)
+#     source_row_number = Column(Integer, nullable=True)
+
+#     is_deleted = Column(Boolean, nullable=False, default=False)
+#     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+#     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+#     company = relationship("Company", back_populates="sl_accounting")
+#     subledger = relationship("FactSubLedger", back_populates="sl_accounting_lines")
+#     geography = relationship("DimGeography", back_populates="sl_accounting")
+#     batch = relationship("IngestionBatch", back_populates="sl_accounting")
+#     source_file = relationship("FileUpload", back_populates="sl_accounting")
+#     coa = relationship("DimCOA", foreign_keys=[coa_id])
+
+#     __table_args__ = (
+#         UniqueConstraint("company_id", "journal_group_id", "line_type", "movement_type", "side", "entry_index",
+#                          name="uq_fact_slaccounting_line"),
+#         ForeignKeyConstraint(["product_id", "company_id"], ["dim_product.id", "dim_product.company_id"], name="fk_slacc_product_tenant"),
+#         ForeignKeyConstraint(["customer_id", "company_id"], ["dim_customer.id", "dim_customer.company_id"], name="fk_slacc_customer_tenant"),
+#         Index("idx_slacc_company_journal", "company_id", "journal_group_id"),
+#         Index("idx_slacc_line_type", "company_id", "line_type"),
+#         Index("idx_slacc_account", "company_id", "account_code"),
+#         Index("idx_slacc_coa", "coa_id"),
+#         Index("idx_slacc_date", "company_id", "date"),
+
+#         Index("idx_slacc_company_date_side", "company_id", "date", "side"),
+#         Index("idx_slacc_company_account_date", "company_id", "account_code", "date"),
+#         Index("idx_slacc_company_coa_date", "company_id", "coa_id", "date"),
+#         Index("idx_slacc_company_batch_date", "company_id", "batch_id", "date"),
+    
+#         # Covering index for P&L / Journal reporting
+#         Index("idx_slacc_covering_reporting", "company_id", "date", "line_type", "side",
+#             postgresql_include=['amount', 'account_code', 'movement_type']),
+#         Index("idx_slacc_is_deleted", "company_id", "is_deleted"),
+#     )
 
 class FactSLAccounting(Base):
     __tablename__ = "fact_slaccounting"
@@ -888,25 +1018,51 @@ class FactSLAccounting(Base):
     source_file = relationship("FileUpload", back_populates="sl_accounting")
     coa = relationship("DimCOA", foreign_keys=[coa_id])
 
+    # ==================== RELATIONSHIPS (with batch) ====================
+    product = relationship(
+        "DimProduct",
+        primaryjoin=and_(
+            foreign(product_id) == DimProduct.id,
+            foreign(company_id) == DimProduct.company_id,
+            foreign(batch_id) == DimProduct.batch_id
+        ),
+        viewonly=True
+    )
+
+    customer = relationship(
+        "DimCustomer",
+        primaryjoin=and_(
+            foreign(customer_id) == DimCustomer.id,
+            foreign(company_id) == DimCustomer.company_id,
+            foreign(batch_id) == DimCustomer.batch_id
+        ),
+        viewonly=True
+    )
+
     __table_args__ = (
         UniqueConstraint("company_id", "journal_group_id", "line_type", "movement_type", "side", "entry_index",
                          name="uq_fact_slaccounting_line"),
-        ForeignKeyConstraint(["product_id", "company_id"], ["dim_product.id", "dim_product.company_id"], name="fk_slacc_product_tenant"),
-        ForeignKeyConstraint(["customer_id", "company_id"], ["dim_customer.id", "dim_customer.company_id"], name="fk_slacc_customer_tenant"),
+        
+        # 🔥 FIXED: Now using 3-column FKs
+        ForeignKeyConstraint(
+            ["product_id", "company_id", "batch_id"],
+            ["dim_product.id", "dim_product.company_id", "dim_product.batch_id"],
+            name="fk_slacc_product_tenant"
+        ),
+        ForeignKeyConstraint(
+            ["customer_id", "company_id", "batch_id"],
+            ["dim_customer.id", "dim_customer.company_id", "dim_customer.batch_id"],
+            name="fk_slacc_customer_tenant"
+        ),
+        
         Index("idx_slacc_company_journal", "company_id", "journal_group_id"),
         Index("idx_slacc_line_type", "company_id", "line_type"),
         Index("idx_slacc_account", "company_id", "account_code"),
         Index("idx_slacc_coa", "coa_id"),
         Index("idx_slacc_date", "company_id", "date"),
-
         Index("idx_slacc_company_date_side", "company_id", "date", "side"),
         Index("idx_slacc_company_account_date", "company_id", "account_code", "date"),
-        Index("idx_slacc_company_coa_date", "company_id", "coa_id", "date"),
         Index("idx_slacc_company_batch_date", "company_id", "batch_id", "date"),
-    
-        # Covering index for P&L / Journal reporting
-        Index("idx_slacc_covering_reporting", "company_id", "date", "line_type", "side",
-            postgresql_include=['amount', 'account_code', 'movement_type']),
         Index("idx_slacc_is_deleted", "company_id", "is_deleted"),
     )
 
@@ -1054,6 +1210,7 @@ class FactSLAccountingWide(Base):
     # =========================
     __table_args__ = (
         Index("idx_sl_wide_company", "company_id"),
+        Index("idx_sl_wide_company_batch", "company_id", "batch_id"),
         Index("idx_sl_wide_order", "company_id", "order_id"),
         Index("idx_sl_wide_date", "company_id", "order_date"),
 
@@ -1071,6 +1228,10 @@ class FinancialBalance(Base):
     __tablename__ = "financial_balances"
 
     id = Column(BigInteger, primary_key=True, index=True)
+    batch_id = Column(
+    BigInteger,
+    ForeignKey("ingestion_batches.id")
+    )
     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     period_start = Column(Date, ForeignKey("dim_date.date"), nullable=False)
     period_end = Column(Date, ForeignKey("dim_date.date"), nullable=False)
@@ -1088,7 +1249,16 @@ class FinancialBalance(Base):
     standard_account = relationship("StandardAccount", back_populates="financial_balances")
 
     __table_args__ = (
-        UniqueConstraint("company_id", "period_start", "period_type", "standard_code", "is_average", name="uq_financial_balance"),
+        # UniqueConstraint("company_id", "period_start", "period_type", "standard_code", "is_average", name="uq_financial_balance"),
+        UniqueConstraint(
+            "company_id",
+            "batch_id",
+            "period_start",
+            "period_type",
+            "standard_code",
+            "is_average",
+            name="uq_financial_balance"
+        ),
         Index("idx_fb_company", "company_id"),
         Index("idx_fb_company_period", "company_id", "period_start"),
         Index("idx_fb_standard_code", "standard_code"),
@@ -1166,6 +1336,10 @@ class KPIValue(Base):
     __tablename__ = "kpi_values"
 
     id = Column(BigInteger, primary_key=True, index=True)
+    batch_id = Column(
+    BigInteger,
+    ForeignKey("ingestion_batches.id")
+    )
     company_id = Column(BigInteger, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     period_start = Column(Date, ForeignKey("dim_date.date"), nullable=False)
     period_end = Column(Date, ForeignKey("dim_date.date"), nullable=False)
@@ -1181,7 +1355,15 @@ class KPIValue(Base):
     kpi_definition = relationship("KPIDefinition", back_populates="kpi_values")
 
     __table_args__ = (
-        UniqueConstraint("company_id", "period_start", "period_type", "kpi_code", name="uq_kpi_value"),
+        # UniqueConstraint("company_id", "period_start", "period_type", "kpi_code", name="uq_kpi_value"),
+        UniqueConstraint(
+            "company_id",
+            "batch_id",
+            "period_start",
+            "period_type",
+            "kpi_code",
+            name="uq_kpi_value"
+        ),
         Index("idx_kpi_company", "company_id"),
         Index("idx_kpi_company_period", "company_id", "period_start"),
         Index("idx_kpi_code", "kpi_code"),
@@ -1235,14 +1417,26 @@ class DimAssetValue(Base):
     source_file = relationship("FileUpload", back_populates="asset_values")
 
     __table_args__ = (
+        # ForeignKeyConstraint(
+        #     ["bs_asset_coa_id", "company_id"],
+        #     ["dim_coa.id", "dim_coa.company_id"],
+        #     name="fk_asset_bs_asset_coa"
+        # ),
+        # ForeignKeyConstraint(
+        #     ["bs_accumulated_dep_coa_id", "company_id"],
+        #     ["dim_coa.id", "dim_coa.company_id"],
+        #     name="fk_asset_bs_acc_dep_coa"
+        # ),
+
         ForeignKeyConstraint(
-            ["bs_asset_coa_id", "company_id"],
-            ["dim_coa.id", "dim_coa.company_id"],
+            ["bs_asset_coa_id", "company_id", "batch_id"],
+            ["dim_coa.id", "dim_coa.company_id", "dim_coa.batch_id"],
             name="fk_asset_bs_asset_coa"
         ),
+
         ForeignKeyConstraint(
-            ["bs_accumulated_dep_coa_id", "company_id"],
-            ["dim_coa.id", "dim_coa.company_id"],
+            ["bs_accumulated_dep_coa_id", "company_id", "batch_id"],
+            ["dim_coa.id", "dim_coa.company_id", "dim_coa.batch_id"],
             name="fk_asset_bs_acc_dep_coa"
         ),
         Index("idx_asset_company", "company_id"),
@@ -1282,7 +1476,14 @@ class FactAssetYearlyDepreciation(Base):
     source_file = relationship("FileUpload")
 
     __table_args__ = (
-        UniqueConstraint("company_id", "asset_id", "year", name="uq_asset_yearly_dep"),
+        # UniqueConstraint("company_id", "asset_id", "year", name="uq_asset_yearly_dep"),
+        UniqueConstraint(
+            "company_id",
+            "batch_id",
+            "asset_id",
+            "year",
+            name="uq_asset_yearly_dep"
+        ),
         Index("idx_asset_dep_company", "company_id"),
         Index("idx_asset_dep_year", "year"),
     )
@@ -1324,15 +1525,35 @@ class FactAssetMonthlyDepreciation(Base):
     source_file = relationship("FileUpload")
 
     __table_args__ = (
-        UniqueConstraint("company_id", "asset_id", "year", "month", name="uq_asset_monthly_dep"),
+        # UniqueConstraint("company_id", "asset_id", "year", "month", name="uq_asset_monthly_dep"),
+        UniqueConstraint(
+            "company_id",
+            "batch_id",
+            "asset_id",
+            "year",
+            "month",
+            name="uq_asset_monthly_dep"
+        ),
+        # ForeignKeyConstraint(
+        #     ["pnl_depreciation_coa_id", "company_id"],
+        #     ["dim_coa.id", "dim_coa.company_id"],
+        #     name="fk_monthly_pnl_coa"
+        # ),
+        # ForeignKeyConstraint(
+        #     ["bs_accumulated_dep_coa_id", "company_id"],
+        #     ["dim_coa.id", "dim_coa.company_id"],
+        #     name="fk_monthly_bs_coa"
+        # ),
+
         ForeignKeyConstraint(
-            ["pnl_depreciation_coa_id", "company_id"],
-            ["dim_coa.id", "dim_coa.company_id"],
+            ["pnl_depreciation_coa_id", "company_id", "batch_id"],
+            ["dim_coa.id", "dim_coa.company_id", "dim_coa.batch_id"],
             name="fk_monthly_pnl_coa"
         ),
+
         ForeignKeyConstraint(
-            ["bs_accumulated_dep_coa_id", "company_id"],
-            ["dim_coa.id", "dim_coa.company_id"],
+            ["bs_accumulated_dep_coa_id", "company_id", "batch_id"],
+            ["dim_coa.id", "dim_coa.company_id", "dim_coa.batch_id"],
             name="fk_monthly_bs_coa"
         ),
         Index("idx_asset_month_company", "company_id"),
