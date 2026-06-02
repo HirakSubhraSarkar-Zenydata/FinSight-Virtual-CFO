@@ -79,6 +79,8 @@ from database import SessionLocal
 from models import FileUpload, IngestionBatch, User
 from auth import get_current_user
 
+from sqlalchemy import text
+
 from processors.coa_processor import process_coa
 from processors.product_processor import process_product
 from processors.bsv_processor import process_bsv
@@ -98,6 +100,9 @@ from processors.fact_monthly_bs_processor import populate_fact_monthly_bs # for 
 from processors.fact_yearly_pnl_report_processor import populate_fact_yearly_pnl_report # for populating the fact_yearly_pnl_report table with aggregated yearly P&L data by line of business, to enable yearly P&L reporting and analysis
 from processors.fact_yearly_bs_report_processor import populate_fact_yearly_bs_report # for populating the fact_yearly_bs_report table with aggregated yearly balance sheet data by line of business, to enable yearly balance sheet reporting and analysis
 
+
+
+
 router = APIRouter()
 
 
@@ -107,6 +112,65 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+
+def cleanup_batch_data(db, batch_id):
+    """
+    Delete all records related to a batch before re-processing.
+    Safe delete order (reverse dependency order).
+    """
+
+    tables = [
+        # Final reports
+        "fact_yearly_bs_report",
+        "fact_yearly_pnl_report",
+        "fact_monthly_bs",
+        "fact_monthly_pnl",
+
+        # Closing summaries
+        "fact_gl_summary_after_closing",
+        "fact_gl_summary_before_closing",
+
+        # GL
+        "fact_gl_recon",
+        "fact_general_ledger",
+        "fact_tax",
+
+        # Asset journals
+        "fact_asset_journal",
+        "fact_asset_monthly_depreciation",
+        "fact_asset_yearly_depreciation",
+
+        # Asset master
+        "dim_asset_value",
+
+        # Accounting wide table
+        "fact_slaccounting_wide",
+
+        # Base transactional data
+        "fact_subledger",
+
+        # Dimensions
+        "dim_product",
+        "dim_coa",
+        "dim_bsv_tax_rate",
+
+        # Optional if batch_id exists
+        "dim_customer"
+    ]
+
+    for table in tables:
+        try:
+            db.execute(
+                text(f"DELETE FROM {table} WHERE batch_id = :batch_id"),
+                {"batch_id": batch_id}
+            )
+        except Exception:
+            # Table may not contain batch_id
+            pass
+
+    db.commit()
 
 
 @router.post("/start-processing/{batch_id}")
@@ -123,6 +187,22 @@ def start_processing(
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")
 
+    
+     # Ensure only the creator can process the batch
+    if batch.created_by != user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to process this batch"
+        )
+
+    # Prevent re-processing
+    if batch.status == "done":
+        return {
+            "message": "This batch has already been processed",
+            "batch_id": batch.id,
+            "status": batch.status
+        }
+
     files = db.query(FileUpload).filter(
         FileUpload.batch_id == batch_id
     ).all()
@@ -132,6 +212,9 @@ def start_processing(
     try:
         batch.status = "processing"
         db.commit()
+
+        # Remove existing data for this batch if any
+        cleanup_batch_data(db, batch_id)
 
         # ALL PROCESSING STEPS (ORDER MATTERS)
         process_coa(db, user.company_id, file_map["COA"], batch_id)
