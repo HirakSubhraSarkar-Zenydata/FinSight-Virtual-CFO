@@ -5,6 +5,7 @@ from processing import router as processing_router  # ← Add this when ready
 from reporting.yearly_pnl import router as pnl_router
 from reporting.kpi_reporting import router as kpi_router  # ← Add this when ready
 from reporting.expense_breakdown import router as expense_breakdown_router  # ← Add this when ready
+from reporting.GetReportHistory.batch_history import router as batch_history_router  # ← Add this when ready
 
 from database import engine
 from models import Base
@@ -15,6 +16,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
+
+
 # Include Routers
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(ingestion_router, prefix="/ingestion", tags=["Ingestion"])  # Uncomment when ingestion is ready
@@ -22,6 +25,9 @@ app.include_router(processing_router, prefix="/processing", tags=["Processing"])
 app.include_router(pnl_router, prefix="/reporting/pnl", tags=["PnL Reporting"])  # Uncomment when PnL reporting is ready
 app.include_router(kpi_router, prefix="/reporting/kpi", tags=["KPI Reporting"])  # Uncomment when KPI reporting is ready
 app.include_router(expense_breakdown_router, prefix="/reporting/expense-breakdown", tags=["Expense Breakdown"])  # Uncomment when expense breakdown is ready
+app.include_router(batch_history_router, prefix="/get-reporting-history", tags=["Report History"])  # Uncomment when report history is ready
+
+
 @app.get("/")
 def root():
     return {
