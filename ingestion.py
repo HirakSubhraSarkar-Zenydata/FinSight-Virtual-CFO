@@ -199,7 +199,7 @@ from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, P
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import FileUpload, IngestionBatch, User
-from auth import get_current_user
+from auth import get_current_user, require_admin
 from supabase import create_client
 import os
 from datetime import datetime
@@ -241,7 +241,8 @@ async def upload_file(
     file_type: str = Form(...),
     batch_id: Optional[int] = Form(None),
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user)
+    # user: User = Depends(get_current_user)
+    user: User = Depends(require_admin)  # ✅ ONLY ADMINS CAN UPLOAD
 ):
     file_type = file_type.upper()
 
@@ -342,7 +343,8 @@ async def upload_file(
 async def delete_file(
     file_id: int = Path(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    # current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)  # ✅ ONLY ADMINS CAN DELETE
 ):
     try:
         file_upload = db.query(FileUpload).filter(
