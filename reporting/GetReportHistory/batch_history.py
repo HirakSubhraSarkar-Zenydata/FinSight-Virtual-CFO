@@ -27,7 +27,8 @@ def has_report_history(
         db.query(IngestionBatch)
         .filter(
             IngestionBatch.company_id == user.company_id,
-            IngestionBatch.created_by == user.id,
+            # We want to check if the user has any completed batches, so we not filter by created_by and status
+            # IngestionBatch.created_by == user.id, 
             IngestionBatch.status == "done"
         )
         .first()
@@ -47,7 +48,7 @@ def get_report_history(
         db.query(IngestionBatch)
         .filter(
             IngestionBatch.company_id == user.company_id,
-            IngestionBatch.created_by == user.id,
+            # IngestionBatch.created_by == user.id,
             IngestionBatch.status == "done"
         )
         .order_by(IngestionBatch.created_at.desc())
@@ -83,7 +84,7 @@ def get_report_by_batch(
         .filter(
             IngestionBatch.id == batch_id,
             IngestionBatch.company_id == user.company_id,
-            IngestionBatch.created_by == user.id,
+            # IngestionBatch.created_by == user.id,
             IngestionBatch.status == "done"
         )
         .first()

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from auth import router as auth_router     # Make sure this imports correctly
 from ingestion import router as ingestion_router  # ← Add this when ready
 from processing import router as processing_router  # ← Add this when ready
@@ -16,6 +17,12 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Include Routers
