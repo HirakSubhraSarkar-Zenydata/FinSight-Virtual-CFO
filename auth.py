@@ -52,6 +52,14 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+# =========================
+# Accept Invitation Request Model from Email verification link
+# =========================
+class AcceptInvitationRequest(BaseModel):
+    token: str
+    name: str = Field(min_length=2, max_length=100)
+    password: str = Field(min_length=8)
+
 
 # =========================
 # UTILS
@@ -237,3 +245,75 @@ def logout():
     return {
         "message": "Logout successful. Delete token on client side."
     }
+
+
+
+# =========================
+# PASSWORD RESET (MVP - EMAIL ONLY)
+# =========================
+@router.post("/accept-invitation")
+def accept_invitation(
+    data: AcceptInvitationRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+
+        payload = jwt.decode(
+            data.token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+
+        if payload.get("type") != "invite":
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid invitation token"
+            )
+
+        email = payload["email"]
+        role = payload["role"]
+        company_id = payload["company_id"]
+
+        existing_user = db.query(User).filter(
+            User.email == email,
+            User.is_deleted == False
+        ).first()
+
+        if existing_user:
+            raise HTTPException(
+                status_code=400,
+                detail="User already exists"
+            )
+
+        new_user = User(
+            company_id=company_id,
+            name=data.name.strip(),
+            email=email,
+            password_hash=hash_password(data.password),
+            role=role,
+            is_active=True,
+            is_deleted=False
+        )
+
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        return {
+            "message": "Account created successfully",
+            "user_id": new_user.id,
+            "email": email,
+            "role": role
+        }
+
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invitation expired"
+        )
+
+    except JWTError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid invitation token"
+        )
