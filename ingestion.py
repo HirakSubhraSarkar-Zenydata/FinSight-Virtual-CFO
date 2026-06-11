@@ -323,12 +323,14 @@ async def upload_file(
 
         db.add(upload_entry)
         db.commit()
-
+        db.refresh(upload_entry)
+        # print(f"FileUpload entry created with ID: {upload_entry.id}")  # ✅ ADDED
         return {
             "message": "File uploaded successfully",
             "file_type": file_type,
             "file_path": file_path,
-            "batch_id": batch.id
+            "batch_id": batch.id,
+            "file_id": upload_entry.id  # ✅ ADDED
         }
 
     except Exception as e:

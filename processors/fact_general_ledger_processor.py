@@ -4044,6 +4044,63 @@ def process_fact_general_ledger(db: Session, company_id: int, batch_id: int):
             # 🔥 CRITICAL: commit here
             db.commit()
 
+
+        # ============================================
+        # TEST INVENTORY DATA FOR KPI (DIO)
+        # ============================================
+
+        # inventory_rows = [
+        #     (date(2021, 1, 1), 362106),
+        #     (date(2022, 1, 1), 28968),
+        #     (date(2023, 1, 1), 27375),
+        #     (date(2024, 1, 1), 33476),
+        #     (date(2025, 1, 1), 40673),
+        # ]
+
+        # test_rows = []
+
+        # for order_date, amount in inventory_rows:
+
+        #     # Debit Inventory
+        #     test_rows.append(
+        #         FactGeneralLedger(
+        #             company_id=company_id,
+        #             batch_id=batch_id,
+        #             order_date=order_date,
+        #             month=1,
+        #             account="2040-0101-60",
+        #             dr_amount=amount,
+        #             cr_amount=0,
+        #             natural_account="60",
+        #             account_subclass="Assets",
+        #             account_type="Assets",
+        #             sub_account="RM inventory",
+        #             is_closing_entry=False
+        #         )
+        #     )
+
+        #     # Credit Inventory
+        #     test_rows.append(
+        #         FactGeneralLedger(
+        #             company_id=company_id,
+        #             batch_id=batch_id,
+        #             order_date=order_date,
+        #             month=1,
+        #             account="2040-0101-60",
+        #             dr_amount=0,
+        #             cr_amount=amount,
+        #             natural_account="60",
+        #             account_subclass="Assets",
+        #             account_type="Assets",
+        #             sub_account="RM inventory",
+        #             is_closing_entry=False
+        #         )
+        #     )
+    
+        # db.bulk_save_objects(test_rows)
+        # db.commit()
+
+
         return {
             "status": "success",
             "rows_inserted": len(gl_rows) + len(closing_rows) + len(opening_rows)
