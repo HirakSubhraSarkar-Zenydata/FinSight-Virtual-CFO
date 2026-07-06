@@ -4049,56 +4049,56 @@ def process_fact_general_ledger(db: Session, company_id: int, batch_id: int):
         # TEST INVENTORY DATA FOR KPI (DIO)
         # ============================================
 
-        # inventory_rows = [
-        #     (date(2021, 1, 1), 362106),
-        #     (date(2022, 1, 1), 28968),
-        #     (date(2023, 1, 1), 27375),
-        #     (date(2024, 1, 1), 33476),
-        #     (date(2025, 1, 1), 40673),
-        # ]
+        inventory_rows = [
+            (date(2021, 1, 1), 362106),
+            (date(2022, 1, 1), 391074),
+            (date(2023, 1, 1), 418449),
+            (date(2024, 1, 1), 451925),
+            (date(2025, 1, 1), 492598),
+        ]
 
-        # test_rows = []
+        test_rows = []
 
-        # for order_date, amount in inventory_rows:
+        for order_date, amount in inventory_rows:
 
-        #     # Debit Inventory
-        #     test_rows.append(
-        #         FactGeneralLedger(
-        #             company_id=company_id,
-        #             batch_id=batch_id,
-        #             order_date=order_date,
-        #             month=1,
-        #             account="2040-0101-60",
-        #             dr_amount=amount,
-        #             cr_amount=0,
-        #             natural_account="60",
-        #             account_subclass="Assets",
-        #             account_type="Assets",
-        #             sub_account="RM inventory",
-        #             is_closing_entry=False
-        #         )
-        #     )
+            # Debit Inventory
+            test_rows.append(
+                FactGeneralLedger(
+                    company_id=company_id,
+                    batch_id=batch_id,
+                    order_date=order_date,
+                    month=1,
+                    account="2040-0101-60",
+                    dr_amount=amount,
+                    cr_amount=0,
+                    natural_account="60",
+                    account_subclass="Assets",
+                    account_type="Assets",
+                    sub_account="RM inventory",
+                    is_closing_entry=False
+                )
+            )
 
-        #     # Credit Inventory
-        #     test_rows.append(
-        #         FactGeneralLedger(
-        #             company_id=company_id,
-        #             batch_id=batch_id,
-        #             order_date=order_date,
-        #             month=1,
-        #             account="2040-0101-60",
-        #             dr_amount=0,
-        #             cr_amount=amount,
-        #             natural_account="60",
-        #             account_subclass="Assets",
-        #             account_type="Assets",
-        #             sub_account="RM inventory",
-        #             is_closing_entry=False
-        #         )
-        #     )
+            # Credit Inventory
+            test_rows.append(
+                FactGeneralLedger(
+                    company_id=company_id,
+                    batch_id=batch_id,
+                    order_date=order_date,
+                    month=1,
+                    account="2040-0101-110",
+                    dr_amount=0,
+                    cr_amount=amount,
+                    natural_account="110",
+                    account_subclass="Liabilities",
+                    account_type="Liabilities",
+                    sub_account="Trade payables",
+                    is_closing_entry=False
+                )
+            )
     
-        # db.bulk_save_objects(test_rows)
-        # db.commit()
+        db.bulk_save_objects(test_rows)
+        db.commit()
 
 
         return {
