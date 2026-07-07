@@ -7,6 +7,7 @@ from reporting.yearly_pnl import router as pnl_router
 from reporting.kpi_reporting import router as kpi_router  # ← Add this when ready
 from reporting.expense_breakdown import router as expense_breakdown_router  # ← Add this when ready
 from reporting.GetReportHistory.batch_history import router as batch_history_router  # ← Add this when ready
+from reporting.customer_segmentation import router as customer_segmentation_router  # ← Add this when ready
 
 from admin.invite_user import router as invite_user_router
 
@@ -35,6 +36,7 @@ app.include_router(pnl_router, prefix="/reporting/pnl", tags=["PnL Reporting"]) 
 app.include_router(kpi_router, prefix="/reporting/kpi", tags=["KPI Reporting"])  # Uncomment when KPI reporting is ready
 app.include_router(expense_breakdown_router, prefix="/reporting/expense-breakdown", tags=["Expense Breakdown"])  # Uncomment when expense breakdown is ready
 app.include_router(batch_history_router, prefix="/get-reporting-history", tags=["Report History"])  # Uncomment when report history is ready
+app.include_router(customer_segmentation_router, prefix="/reporting", tags=["Customer Segmentation"])  # Uncomment when customer segmentation is ready
 app.include_router(invite_user_router, prefix="/admin", tags=["User Management"])
 
 @app.get("/")
