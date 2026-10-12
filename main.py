@@ -9,6 +9,11 @@ from reporting.expense_breakdown import router as expense_breakdown_router  # �
 from reporting.GetReportHistory.batch_history import router as batch_history_router  # ← Add this when ready
 from reporting.customer_segmentation import router as customer_segmentation_router  # ← Add this when ready
 
+from reporting.proforma_income_statement import router as get_proforma_income_statement # Slide 9
+from reporting.proforma_balance_sheet import router as get_proforma_balance_sheet # Slide 10
+from reporting.proforma_cash_flow_statement import router as get_proforma_cash_flow_statement # Slide 11
+
+
 from admin.invite_user import router as invite_user_router
 
 from database import engine
@@ -37,6 +42,9 @@ app.include_router(kpi_router, prefix="/reporting/kpi", tags=["KPI Reporting"]) 
 app.include_router(expense_breakdown_router, prefix="/reporting/expense-breakdown", tags=["Expense Breakdown"])  # Uncomment when expense breakdown is ready
 app.include_router(batch_history_router, prefix="/get-reporting-history", tags=["Report History"])  # Uncomment when report history is ready
 app.include_router(customer_segmentation_router, prefix="/reporting", tags=["Customer Segmentation"])  # Uncomment when customer segmentation is ready
+app.include_router(get_proforma_income_statement, prefix="/reporting", tags=["Proforma Reporting Slide-9"])  # Uncomment when proforma income statement is ready
+app.include_router(get_proforma_balance_sheet, prefix="/reporting", tags=["Proforma Reporting Slide-10"])  # Uncomment when proforma balance sheet is ready
+app.include_router(get_proforma_cash_flow_statement, prefix="/reporting", tags=["Proforma Reporting Slide-11"])  # Uncomment when proforma cash flow statement is ready
 app.include_router(invite_user_router, prefix="/admin", tags=["User Management"])
 
 @app.get("/")
