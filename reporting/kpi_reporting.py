@@ -2070,6 +2070,8 @@ def get_monthly_kpis(
         if cogs else None
     )
 
+    
+
     # ==========================================
     # DSO
     # ==========================================
@@ -2089,6 +2091,13 @@ def get_monthly_kpis(
             and dso is not None
         )
         else None
+    )
+
+    # ==========================================
+    # CURRENT WORKING CAPITAL
+    # ==========================================
+    current_working_capital = (
+        current_assets - current_liabilities
     )
 
     # ==========================================
@@ -2461,7 +2470,49 @@ def get_monthly_kpis(
                     if dpo is not None
                     else None
             }
+        },
+        "current_working_capital": {
+
+            "formula":
+                "Current Assets - Current Liabilities",
+
+            "value":
+                round(current_working_capital, 2),
+
+            "benchmark":
+                "> 0 is good; negative indicates short-term liquidity risk",
+
+            "status": (
+                "Healthy"
+                if current_working_capital > 0
+                else "Risky"
+            ),
+
+            "details": {
+
+                "cash":
+                    round(cash, 2),
+
+                "receivables":
+                    round(receivables, 2),
+
+                "inventory":
+                    round(inventory, 2),
+
+                "current_assets":
+                    round(current_assets, 2),
+
+                "trade_payables":
+                    round(trade_payables, 2),
+
+                "other_payables":
+                    round(other_payables, 2),
+
+                "current_liabilities":
+                    round(current_liabilities, 2)
+            }
         }
+        
     }
 
     return {
